@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>餐厅详情 - 西交吃什么</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --pri: #2563eb; --bg: #f0f4f8; --card: #fff; --text: #1e293b; --muted: #64748b; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; background: var(--bg); min-height: 100vh; padding: 20px; }
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+    .header a { color: var(--pri); text-decoration: none; font-size: 14px; }
+    .header h1 { margin: 0; font-size: 18px; }
+    .floor-section { background: var(--card); border-radius: 16px; padding: 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .floor-title { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+    .window-block { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9; }
+    .window-block:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .window-name { font-weight: 600; font-size: 15px; margin-bottom: 8px; }
+    .window-imgs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .window-imgs img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
+    .window-imgs .add-img { width: 80px; height: 80px; border: 2px dashed #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; font-size: 24px; }
+    .window-imgs .add-img:hover { border-color: var(--pri); color: var(--pri); }
+    input[type=file] { display: none; }
+    .dish-list { display: grid; gap: 6px; margin-bottom: 12px; }
+    .dish-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    .dish-item:last-child { border-bottom: none; }
+    .dish-item.dish-empty { color: var(--muted); font-size: 13px; }
+    .dish-price { color: #dc2626; font-weight: 500; }
+    .reviews-title { font-size: 14px; color: var(--muted); margin: 12px 0 8px; }
+    .review-item { padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    .review-item:last-child { border-bottom: none; }
+    .review-meta { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+    .review-stars { color: #f59e0b; }
+    .review-imgs { margin-top: 6px; }
+    .review-imgs img { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; margin-right: 4px; }
+    .review-form { margin-top: 12px; padding: 12px; background: #f8fafc; border-radius: 10px; }
+    .review-form textarea { width: 100%; padding: 8px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; min-height: 60px; margin-bottom: 8px; }
+    .review-form .stars { margin-bottom: 8px; }
+    .review-form .stars span { cursor: pointer; font-size: 20px; color: #e2e8f0; }
+    .review-form .stars span.on { color: #f59e0b; }
+    .btn { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; background: var(--pri); color: #fff; }
+    .btn:hover { opacity: 0.9; }
+    .btn-small { padding: 6px 10px; font-size: 12px; }
+    .btn-outline { background: #f1f5f9; color: var(--text); }
+    .review-form-imgs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+    .review-form-imgs img { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; }
+    .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="{{ url_for('eat_index') }}">← 西交吃什么</a>
+    <h1 id="canteen-name">加载中...</h1>
+  </header>
+  <main id="main"></main>
+
+  <script>
+    const base = window.location.origin || '';
+    const canteenId = {{ canteen_id }};
+
+    function starHtml(rating) {
+      let s = '';
+      for (let i = 1; i <= 5; i++) s += i <= rating ? '★' : '☆';
+      return s;
+    }
+
+    function escapeHtml(str) {
+      if (str == null) return '';
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function renderWindowBlock(floorLabel, w, dList, reviews, container) {
+      const winId = w.id;
+      const imgs = w.image_urls || [];
+      let imgHtml = imgs.map(url => '<img src="' + base + url + '" alt="">').join('');
+      imgHtml += '<div class="add-img" data-window-id="' + winId + '" title="上传窗口图片（所有人可传）">+</div>';
+      let dishHtml = (dList || []).map(d => {
+        const price = d.price != null ? '¥' + d.price : (d.price_min != null && d.price_max != null ? '¥' + d.price_min + '-' + d.price_max : '');
+        return '<div class="dish-item"><span>' + escapeHtml(d.name) + '</span><span class="dish-price">' + price + '</span></div>';
+      }).join('');
+      if (!dishHtml) dishHtml = '<div class="dish-item dish-empty">暂无菜品，欢迎在首页「提交食堂信息」补充</div>';
+      let reviewHtml = (reviews || []).map(r => {
+        let ri = (r.image_urls || []).map(u => '<img src="' + base + u + '" alt="">').join('');
+        return '<div class="review-item">' +
+          '<div class="review-meta">' + escapeHtml(r.student_id) + ' · ' + starHtml(r.rating) + ' · ' + (r.created_at ? r.created_at.slice(0, 10) : '') + '</div>' +
+          (r.content ? '<div>' + escapeHtml(r.content) + '</div>' : '') +
+          (ri ? '<div class="review-imgs">' + ri + '</div>' : '') + '</div>';
+      }).join('');
+      const block = document.createElement('div');
+      block.className = 'window-block';
+      block.setAttribute('data-window-id', winId);
+      block.innerHTML = '<div class="window-name">' + escapeHtml(w.name) + '</div>' +
+        '<div class="window-imgs" id="win-imgs-' + winId + '">' + imgHtml + '</div>' +
+        '<div class="dish-list">' + dishHtml + '</div>' +
+        '<div class="reviews-title">评价（所有人可写）</div>' +
+        '<div class="review-list" id="reviews-' + winId + '">' + reviewHtml + '</div>' +
+        '<div class="review-form"><div class="stars" id="stars-' + winId + '">' +
+        [1,2,3,4,5].map(i => '<span data-r="' + i + '">☆</span>').join('') + '</div>' +
+        '<textarea id="content-' + winId + '" placeholder="写下你的评价，其他用户可见（选填）"></textarea>' +
+        '<div class="review-form-imgs" id="review-imgs-' + winId + '"></div>' +
+        '<div style="margin-top:8px;"><button type="button" class="btn btn-small btn-outline" id="add-review-img-' + winId + '">添加图片</button> ' +
+        '<button type="button" class="btn btn-small" id="submit-review-' + winId + '">提交评价</button></div></div>';
+      container.appendChild(block);
+
+      const starSpans = block.querySelectorAll('.stars span');
+      let selectedRating = 0;
+      starSpans.forEach((sp, i) => {
+        sp.onclick = () => {
+          selectedRating = i + 1;
+          starSpans.forEach((s, j) => s.classList.toggle('on', j < selectedRating));
+          starSpans.forEach((s, j) => s.textContent = j < selectedRating ? '★' : '☆');
+        };
+      });
+
+      const reviewImgUrls = [];
+      block.querySelector('#add-review-img-' + winId).onclick = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function() {
+          const file = this.files && this.files[0];
+          if (!file) return;
+          const fd = new FormData();
+          fd.append('file', file);
+          fd.append('bucket', 'canteen');
+          fetch(base + '/api/upload', { method: 'POST', body: fd, credentials: 'include' })
+            .then(r => r.json())
+            .then(data => {
+              if (data.code === 0 && data.url) {
+                reviewImgUrls.push(data.url);
+                const wrap = document.getElementById('review-imgs-' + winId);
+                const img = document.createElement('img');
+                img.src = base + data.url;
+                wrap.appendChild(img);
+              } else alert(data.message || '上传失败');
+            })
+            .catch(() => alert('网络异常'));
+        };
+        input.click();
+      };
+
+      block.querySelector('#submit-review-' + winId).onclick = () => {
+        if (selectedRating < 1) { alert('请选择星级'); return; }
+        fetch(base + '/api/eat/review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ window_id: winId, rating: selectedRating, content: document.getElementById('content-' + winId).value.trim(), image_urls: reviewImgUrls }),
+          credentials: 'include',
+        })
+          .then(r => r.json())
+          .then(data => {
+            if (data.code === 0) { alert('评价成功'); loadDetail(); }
+            else alert(data.message || '提交失败');
+          })
+          .catch(() => alert('网络异常'));
+      };
+
+      block.querySelector('.add-img').onclick = function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function() {
+          const file = this.files && this.files[0];
+          if (!file) return;
+          const fd = new FormData();
+          fd.append('file', file);
+          fetch(base + '/api/eat/windows/' + winId + '/images', { method: 'POST', body: fd, credentials: 'include' })
+            .then(r => r.json())
+            .then(data => {
+              if (data.code === 0) {
+                const wrap = document.getElementById('win-imgs-' + winId);
+                const add = wrap.querySelector('.add-img');
+                const img = document.createElement('img');
+                img.src = base + data.url;
+                wrap.insertBefore(img, add);
+              } else alert(data.message || '上传失败');
+            })
+            .catch(() => alert('网络异常'));
+        };
+        input.click();
+      };
+    }
+
+    function loadDetail() {
+      fetch(base + '/api/eat/canteens/' + canteenId)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code !== 0 || !data.canteen) {
+            document.getElementById('main').innerHTML = '<div class="empty">加载失败</div>';
+            return;
+          }
+          document.getElementById('canteen-name').textContent = data.canteen.name || '餐厅';
+          const floors = data.floors || {};
+          const floorOrder = Object.keys(floors).map(Number).sort((a,b) => a - b);
+          const main = document.getElementById('main');
+          main.innerHTML = '';
+          floorOrder.forEach(floor => {
+            const arr = floors[floor] || [];
+            const floorLabel = floor === -1 ? '负一层' : floor + ' 层';
+            const sec = document.createElement('div');
+            sec.className = 'floor-section';
+            sec.innerHTML = '<div class="floor-title">' + floorLabel + '</div>';
+            const winContainer = document.createElement('div');
+            arr.forEach(({ window: w, dishes: dList, reviews }) => {
+              renderWindowBlock(floorLabel, w, dList, reviews, winContainer);
+            });
+            sec.appendChild(winContainer);
+            main.appendChild(sec);
+          });
+          if (main.children.length === 0) main.innerHTML = '<div class="empty">该餐厅暂无窗口数据，可到首页「提交食堂信息」或联系管理员添加</div>';
+        })
+        .catch(() => { document.getElementById('main').innerHTML = '<div class="empty">网络错误</div>'; });
+    }
+
+    loadDetail();
+  </script>
+</body>
+</html>

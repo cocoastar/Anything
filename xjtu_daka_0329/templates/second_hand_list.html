@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>二手交易 - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <style>
+    body { margin: 0; min-height: 100vh; }
+    .header { background: var(--card); padding: 16px 24px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .header a { color: var(--pri); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .header .btn { padding: 8px 16px; border-radius: var(--radius); font-size: 14px; font-weight: 500; text-decoration: none; background: var(--pri); color: #fff; border: none; cursor: pointer; display: inline-block; transition: background 0.15s; }
+    .header .btn:hover { background: var(--pri-hover); }
+    .main { max-width: 720px; margin: 0 auto; padding: 24px; }
+    .toolbar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .toolbar select { padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--card); font-size: 14px; font-family: var(--font); color: var(--text); }
+    .item-list { display: grid; gap: 12px; }
+    .item-card { background: var(--card); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow); display: flex; gap: 16px; text-decoration: none; color: inherit; transition: box-shadow 0.2s; }
+    .item-card:hover { box-shadow: var(--shadow-md); }
+    .item-img { width: 96px; height: 96px; border-radius: var(--radius-sm); background: var(--bg-subtle); object-fit: cover; flex-shrink: 0; }
+    .item-body { flex: 1; min-width: 0; }
+    .item-title { font-weight: 600; margin: 0 0 6px; font-size: 16px; line-height: 1.35; }
+    .item-meta { color: var(--muted); font-size: 13px; margin-bottom: 6px; }
+    .item-price { color: var(--danger); font-weight: 600; font-size: 17px; }
+    .item-status { font-size: 12px; color: var(--muted); margin-left: 8px; }
+    .empty { text-align: center; padding: 56px 20px; color: var(--muted); font-size: 15px; }
+    .pager { margin-top: 24px; text-align: center; }
+    .pager button { margin: 0 4px; padding: 8px 14px; border: 1px solid var(--border); background: var(--card); border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; color: var(--text); }
+    .pager button:hover:not(:disabled) { border-color: var(--pri); color: var(--pri); }
+    .pager button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+    .tabs a { padding: 10px 16px; border-radius: var(--radius); font-size: 14px; text-decoration: none; color: var(--text-secondary); background: var(--bg-subtle); font-weight: 500; transition: background 0.15s, color 0.15s; }
+    .tabs a:hover { background: var(--border); color: var(--text); }
+    .tabs a.active { background: var(--pri); color: #fff; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>二手交易</h1>
+    <div>
+      <a href="{{ url_for('home_page') }}">工作台</a>
+      <span style="margin:0 8px;">|</span>
+      <a href="{{ url_for('second_hand_publish') }}" class="btn">发布</a>
+    </div>
+  </header>
+  <main class="main">
+    <div class="tabs">
+      <a href="{{ url_for('second_hand_list') }}" id="tab-all" class="">全部</a>
+      <a href="{{ url_for('second_hand_list') }}?my=1" id="tab-my" class="">我的发布</a>
+      <a href="{{ url_for('second_hand_list') }}?favorite=1" id="tab-fav" class="">我的收藏</a>
+    </div>
+    <div class="toolbar">
+      <select id="filter-category">
+        <option value="">全部分类</option>
+        <option value="书籍">书籍</option>
+        <option value="数码">数码</option>
+        <option value="生活用品">生活用品</option>
+        <option value="其他">其他</option>
+      </select>
+      <select id="filter-status">
+        <option value="on_sale">在售</option>
+        <option value="sold">已出</option>
+      </select>
+    </div>
+    <div class="item-list" id="item-list"></div>
+    <div class="empty" id="empty" style="display:none;">暂无商品</div>
+    <div class="pager" id="pager" style="display:none;"></div>
+  </main>
+  <script>
+    const base = window.location.origin || '';
+    let page = 1;
+    const size = 20;
+    const params = new URLSearchParams(window.location.search);
+    const myOnly = params.get('my') === '1';
+    const favOnly = params.get('favorite') === '1';
+    if (myOnly) document.getElementById('tab-my').classList.add('active');
+    else if (favOnly) document.getElementById('tab-fav').classList.add('active');
+    else document.getElementById('tab-all').classList.add('active');
+
+    function loadList() {
+      const category = document.getElementById('filter-category').value;
+      const status = document.getElementById('filter-status').value;
+      let url = base + '/api/second-hand?page=' + page + '&size=' + size + (category ? '&category=' + encodeURIComponent(category) : '') + (status ? '&status=' + encodeURIComponent(status) : '');
+      if (myOnly) url += '&my=1';
+      if (favOnly) url += '&favorite=1';
+      fetch(url, { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => {
+          const list = document.getElementById('item-list');
+          const empty = document.getElementById('empty');
+          const pager = document.getElementById('pager');
+          list.innerHTML = '';
+          if (!data.items || data.items.length === 0) {
+            empty.style.display = 'block';
+            pager.style.display = 'none';
+            return;
+          }
+          empty.style.display = 'none';
+          data.items.forEach(item => {
+            const a = document.createElement('a');
+            a.className = 'item-card';
+            a.href = base + '/second-hand/' + item.id;
+            const imgUrl = (item.image_urls && item.image_urls[0]) ? (base + item.image_urls[0]) : '';
+            a.innerHTML = '<img class="item-img" src="' + (imgUrl || '') + '" alt="" onerror="this.style.display=\'none\'">' +
+              '<div class="item-body">' +
+              '<div class="item-title">' + escapeHtml(item.title) + '</div>' +
+              '<div class="item-meta">' + escapeHtml(item.category || '未分类') + ' · ' + (item.created_at ? item.created_at.slice(0, 10) : '') + '</div>' +
+              '<div class="item-price">¥' + (item.price || 0) + '<span class="item-status">' + (item.status === 'sold' ? '已出' : item.status === 'off_shelf' ? '已下架' : '') + '</span></div>' +
+              '</div>';
+            list.appendChild(a);
+          });
+          const total = data.total || 0;
+          const totalPage = Math.max(1, Math.ceil(total / size));
+          if (totalPage > 1) {
+            pager.style.display = 'block';
+            pager.innerHTML = '<button type="button" ' + (page <= 1 ? 'disabled' : '') + ' onclick="page=1;loadList()">首页</button>' +
+              '<button type="button" ' + (page <= 1 ? 'disabled' : '') + ' onclick="page--;loadList()">上一页</button>' +
+              '<span style="margin:0 12px;">' + page + ' / ' + totalPage + '</span>' +
+              '<button type="button" ' + (page >= totalPage ? 'disabled' : '') + ' onclick="page++;loadList()">下一页</button>' +
+              '<button type="button" ' + (page >= totalPage ? 'disabled' : '') + ' onclick="page=' + totalPage + ';loadList()">末页</button>';
+          } else {
+            pager.style.display = 'none';
+          }
+        })
+        .catch(() => { document.getElementById('empty').style.display = 'block'; document.getElementById('empty').textContent = '加载失败'; });
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    document.getElementById('filter-category').onchange = function() { page = 1; loadList(); };
+    document.getElementById('filter-status').onchange = function() { page = 1; loadList(); };
+    loadList();
+  </script>
+</body>
+</html>

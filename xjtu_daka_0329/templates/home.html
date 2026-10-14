@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>工作台 - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <style>
+    * { box-sizing: border-box; }
+    body, html { margin: 0; min-height: 100%; }
+
+    .header {
+      background: var(--card);
+      padding: 16px 24px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
+    .header .user { color: var(--muted); font-size: 14px; }
+    .header a { color: var(--pri); text-decoration: none; font-size: 14px; }
+    .header a:hover { text-decoration: underline; }
+    .header .btn-outline {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .header .btn-outline:hover { border-color: var(--danger); color: var(--danger); }
+
+    .main { max-width: 600px; margin: 0 auto; padding: 24px; }
+
+    /* 服务入口 - 网格卡片 */
+    .section-title { font-size: 15px; font-weight: 600; color: var(--text); margin: 0 0 16px; }
+    .nav-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .nav-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 12px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .nav-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .nav-card.current { background: linear-gradient(135deg, var(--pri) 0%, #6366f1 100%); color: #fff; }
+    .nav-card.current:hover { color: #fff; }
+    .nav-card .icon { font-size: 24px; margin-bottom: 8px; }
+    .nav-card .label { font-size: 13px; font-weight: 500; text-align: center; }
+
+    /* 签到打卡 - 圆形按钮区 */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+    .daka-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .daka-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.15s;
+    }
+    .daka-btn:hover:not(:disabled) { transform: scale(1.05); }
+    .daka-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .daka-btn .circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+    }
+    .daka-btn.start .circle { background: linear-gradient(135deg, var(--pri) 0%, #6366f1 100%); }
+    .daka-btn.stop .circle { background: linear-gradient(135deg, #64748b 0%, #475569 100%); box-shadow: 0 4px 14px rgba(71, 85, 105, 0.35); }
+    .daka-btn .label { font-size: 14px; color: var(--muted); font-weight: 500; }
+    .daka-msg {
+      text-align: center;
+      font-size: 14px;
+      min-height: 22px;
+      margin-top: 8px;
+    }
+    .daka-msg.success { color: var(--success); }
+    .daka-msg.error { color: var(--danger); }
+
+    /* 运行日志 - 自动加载 */
+    .log-section .section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .log-box {
+      width: 100%;
+      min-height: 180px;
+      max-height: 280px;
+      overflow-y: auto;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 12px;
+      font-family: "SF Mono", "Monaco", "Consolas", ui-monospace, monospace;
+      background: #f8fafc;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+    .log-box.empty { color: var(--muted); }
+
+    /* Modal */
+    .modal-mask {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-mask.show { display: flex; }
+    .modal {
+      width: 100%;
+      max-width: 380px;
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow-lg);
+    }
+    .modal h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+    .modal .phone-hint { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .modal input[type="text"] {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-sm);
+      font-size: 16px;
+      letter-spacing: 0.2em;
+    }
+    .modal .mfa-err { color: var(--danger); font-size: 13px; margin-top: 8px; }
+    .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+    .modal-actions .btn { flex: 1; padding: 12px; border-radius: var(--radius-sm); border: none; font-size: 15px; font-weight: 500; cursor: pointer; }
+    .modal-actions .btn-pri { background: var(--pri); color: #fff; }
+    .modal-actions .btn-pri:hover:not(:disabled) { background: var(--pri-hover); }
+    .modal-actions .btn-outline { background: #f1f5f9; color: var(--text); }
+    .modal-actions .btn-outline:hover { background: #e2e8f0; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-left">
+      <h1>西交校园</h1>
+      <span class="user">学号 {{ student_id }}</span>
+      <a href="{{ url_for('profile_page') }}">个人中心</a>
+      {% if is_admin %}<a href="{{ url_for('admin_index') }}" style="color:#dc2626;">管理后台</a>{% endif %}
+    </div>
+    <button type="button" class="btn-outline" id="btn-logout">退出登录</button>
+  </header>
+
+  <main class="main">
+    <p class="section-title">服务入口</p>
+    <div class="nav-grid">
+      <a href="{{ url_for('home_page') }}" class="nav-card current">
+        <span class="icon">🏃</span>
+        <span class="label">体育打卡</span>
+      </a>
+      <a href="{{ url_for('ai_tools_page') }}" class="nav-card">
+        <span class="icon">🤖</span>
+        <span class="label">AI工具合集</span>
+      </a>
+      <a href="{{ url_for('second_hand_list') }}" class="nav-card">
+        <span class="icon">🛒</span>
+        <span class="label">二手交易</span>
+      </a>
+      <a href="{{ url_for('forum_list', board='interview') }}" class="nav-card">
+        <span class="icon">💬</span>
+        <span class="label">面试经验</span>
+      </a>
+      <a href="{{ url_for('eat_index') }}" class="nav-card">
+        <span class="icon">🍜</span>
+        <span class="label">西交吃什么</span>
+      </a>
+    </div>
+
+    <div class="card">
+      <p class="section-title" style="margin-bottom:8px;">签到打卡</p>
+      <p style="color:var(--muted);font-size:14px;margin:0 0 24px;">开启后每天在设定时间段内自动签到、签退。已成功打卡 <strong id="daka-success-count">-</strong> 次 · <a href="#" id="link-daka-records" style="color:var(--pri);">查看打卡记录</a></p>
+      <div class="daka-actions">
+        <button type="button" class="daka-btn start" id="btn-daka" title="签到打卡">
+          <span class="circle">签到</span>
+          <span class="label">签到打卡</span>
+        </button>
+        <button type="button" class="daka-btn stop" id="btn-stop" title="停止打卡">
+          <span class="circle">停止</span>
+          <span class="label">停止打卡</span>
+        </button>
+      </div>
+      <div class="daka-msg" id="daka-msg"></div>
+    </div>
+
+    <div class="card log-section" id="daka-records-card" style="display:none;">
+      <p class="section-title">打卡记录（签到/签退时间及响应内容）</p>
+      <div id="daka-records-list"></div>
+      <p style="margin-top:12px;"><a href="#" id="link-close-records" style="color:var(--pri);">关闭</a></p>
+    </div>
+  </main>
+
+  <div class="modal-mask" id="mfa-modal">
+    <div class="modal">
+      <h2>短信验证</h2>
+      <p class="phone-hint" id="mfa-phone-hint">已向您的安全手机发送验证码，请输入验证码</p>
+      <input type="text" id="mfa-code" placeholder="6 位验证码" inputmode="numeric" maxlength="6" />
+      <div class="mfa-err" id="mfa-err"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-pri" id="btn-mfa-submit">验证并继续</button>
+        <button type="button" class="btn btn-outline" id="btn-mfa-cancel">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const base = window.location.origin || '';
+
+    function $(id) { return document.getElementById(id); }
+
+    const dakaMsg = $('daka-msg');
+    const modal = $('mfa-modal');
+    const mfaCode = $('mfa-code');
+    const mfaPhoneHint = $('mfa-phone-hint');
+    const mfaErr = $('mfa-err');
+
+    function setMsg(text, isError) {
+      dakaMsg.textContent = text || '';
+      dakaMsg.className = 'daka-msg' + (isError ? ' error' : (text ? ' success' : ''));
+    }
+
+    async function doLogout() {
+      try {
+        await fetch(base + '/api/logout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
+      } catch (_) {}
+      window.location.href = base + '/login';
+    }
+
+    $('btn-logout').addEventListener('click', doLogout);
+
+    async function loadDakaStats() {
+      try {
+        const res = await fetch(base + '/api/daka/records?per_page=1', { credentials: 'include' });
+        if (res.status === 401) return;
+        const data = await res.json();
+        if (data.code === 0) {
+          $('daka-success-count').textContent = data.success_count != null ? data.success_count : 0;
+        }
+      } catch (_) {}
+    }
+
+    async function loadDakaRecords() {
+      try {
+        const res = await fetch(base + '/api/daka/records?per_page=30', { credentials: 'include' });
+        if (res.status === 401) return;
+        const data = await res.json();
+        const el = $('daka-records-list');
+        if (data.code !== 0 || !data.records || !data.records.length) {
+          el.innerHTML = '<p style="color:var(--muted);">暂无打卡记录</p>';
+          return;
+        }
+        let html = '<table style="width:100%;border-collapse:collapse;font-size:14px;"><thead><tr><th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">日期</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">签到时间</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">签退时间</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">签到响应</th><th style="text-align:left;padding:8px;border-bottom:1px solid #e2e8f0;">签退响应</th></tr></thead><tbody>';
+        data.records.forEach(function(r) {
+          html += '<tr><td style="padding:8px;border-bottom:1px solid #f1f5f9;">' + (r.date || '-') + '</td><td style="padding:8px;border-bottom:1px solid #f1f5f9;">' + (r.sign_in_at || '-') + '</td><td style="padding:8px;border-bottom:1px solid #f1f5f9;">' + (r.sign_out_at || '-') + '</td><td style="padding:8px;border-bottom:1px solid #f1f5f9;">' + (r.sign_in_msg || '-') + '</td><td style="padding:8px;border-bottom:1px solid #f1f5f9;">' + (r.sign_out_msg || '-') + '</td></tr>';
+        });
+        html += '</tbody></table>';
+        el.innerHTML = html;
+      } catch (_) {
+        $('daka-records-list').innerHTML = '<p style="color:var(--danger);">加载失败</p>';
+      }
+    }
+
+    $('link-daka-records').addEventListener('click', function(e) {
+      e.preventDefault();
+      $('daka-records-card').style.display = 'block';
+      loadDakaRecords();
+    });
+    $('link-close-records').addEventListener('click', function(e) {
+      e.preventDefault();
+      $('daka-records-card').style.display = 'none';
+    });
+
+    loadDakaStats();
+
+    $('btn-daka').addEventListener('click', async () => {
+      const btn = $('btn-daka');
+      btn.disabled = true;
+      setMsg('正在提交...', false);
+      try {
+        const res = await fetch(base + '/api/daka', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+          credentials: 'include',
+        });
+        const data = await res.json();
+        if (res.status === 401) { window.location.href = base + '/login'; return; }
+
+        if (data.code === 202 && data.need_mfa) {
+          mfaPhoneHint.textContent = data.message || ('已向安全手机 ' + (data.mask_phone || '') + ' 发送验证码');
+          mfaCode.value = '';
+          mfaErr.textContent = '';
+          modal.classList.add('show');
+          mfaCode.focus();
+          btn.disabled = false;
+          return;
+        }
+
+        setMsg(data.message || '操作完成', data.code !== 0);
+        loadDakaStats();
+      } catch (err) {
+        setMsg('网络异常', true);
+      }
+      btn.disabled = false;
+    });
+
+    $('btn-mfa-submit').addEventListener('click', async () => {
+      const code = mfaCode.value.trim();
+      if (!code) { mfaErr.textContent = '请输入验证码'; return; }
+      mfaErr.textContent = '';
+      const btn = $('btn-mfa-submit');
+      btn.disabled = true;
+      btn.textContent = '验证中...';
+      try {
+        const res = await fetch(base + '/api/daka_verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code }),
+          credentials: 'include',
+        });
+        const data = await res.json();
+        modal.classList.remove('show');
+        setMsg(data.message || (data.code === 0 ? '打卡已开始' : '验证失败'), data.code !== 0);
+        if (data.code === 0) loadDakaStats();
+      } catch (err) {
+        mfaErr.textContent = '网络异常';
+      }
+      btn.disabled = false;
+      btn.textContent = '验证并继续';
+      $('btn-daka').disabled = false;
+    });
+
+    $('btn-mfa-cancel').addEventListener('click', () => {
+      modal.classList.remove('show');
+      setMsg('已取消', true);
+      $('btn-daka').disabled = false;
+    });
+
+    $('btn-stop').addEventListener('click', async () => {
+      if (!confirm('确定要停止当前打卡任务吗？')) return;
+      try {
+        const res = await fetch(base + '/api/stop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+          credentials: 'include',
+        });
+        if (res.status === 401) { window.location.href = base + '/login'; return; }
+        const data = await res.json();
+        setMsg(data.message || '已停止', false);
+        loadDakaStats();
+      } catch (err) {
+        setMsg('请求失败', true);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>商品详情 - 二手交易 - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <style>
+    body { margin: 0; min-height: 100vh; background: var(--bg); }
+    .header { background: var(--card); padding: 16px 24px; box-shadow: var(--shadow); }
+    .header a { color: var(--pri); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .main { max-width: 560px; margin: 0 auto; padding: 24px; }
+    .card { background: var(--card); border-radius: var(--radius-lg); padding: 24px; box-shadow: var(--shadow); }
+    .detail-img { width: 100%; max-height: 300px; object-fit: contain; background: var(--bg-subtle); border-radius: var(--radius); margin-bottom: 16px; }
+    .detail-img-wrap { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; }
+    .detail-img-wrap img { width: 72px; height: 72px; object-fit: cover; border-radius: var(--radius-sm); cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; }
+    .detail-img-wrap img.active { border-color: var(--pri); }
+    .detail-title { font-size: 20px; font-weight: 600; margin: 0 0 12px; line-height: 1.35; }
+    .detail-price { color: var(--danger); font-size: 26px; font-weight: 600; margin-bottom: 10px; }
+    .detail-meta { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .detail-desc { white-space: pre-wrap; font-size: 14px; line-height: 1.65; margin-bottom: 16px; color: var(--text-secondary); }
+    .detail-contact { font-size: 14px; color: var(--muted); }
+    .status-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 500; margin-left: 8px; }
+    .status-on_sale { background: #dcfce7; color: #166534; }
+    .status-sold { background: #fee2e2; color: #991b1b; }
+    .status-off_shelf { background: var(--bg-subtle); color: var(--muted); }
+    .actions { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 12px; }
+    .actions button { padding: 10px 18px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: 14px; font-weight: 500; font-family: var(--font); transition: background 0.15s, border-color 0.15s; }
+    .actions button.btn-pri { background: var(--pri); color: #fff; border-color: var(--pri); }
+    .actions button.btn-pri:hover { background: var(--pri-hover); border-color: var(--pri-hover); }
+    .actions button.btn-danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    .actions button.btn-outline { background: var(--bg-subtle); }
+    .actions button.btn-outline:hover { border-color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <a href="{{ url_for('second_hand_list') }}">← 返回列表</a>
+  </header>
+  <main class="main">
+  <div class="card" id="main">
+    <p style="color:var(--muted);">加载中...</p>
+  </div>
+  </main>
+  <script>
+    const base = window.location.origin || '';
+    const itemId = {{ item_id }};
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      const d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    fetch(base + '/api/second-hand/' + itemId)
+      .then(r => r.json())
+      .then(data => {
+        if (data.code !== 0 || !data.item) {
+          document.getElementById('main').innerHTML = '<p style="color:#dc2626;">加载失败</p>';
+          return;
+        }
+        const item = data.item;
+        const imgs = item.image_urls || [];
+        const firstImg = imgs[0] ? (base + imgs[0]) : '';
+        let imgHtml = '';
+        if (imgs.length > 0) {
+          imgHtml = '<div class="detail-img-wrap" id="imgWrap">';
+          imgs.forEach((url, i) => {
+            imgHtml += '<img src="' + base + url + '" alt="" data-i="' + i + '" ' + (i === 0 ? 'class="active"' : '') + '>';
+          });
+          imgHtml += '</div>';
+          imgHtml += '<img class="detail-img" id="bigImg" src="' + base + imgs[0] + '" alt="">';
+        } else {
+          imgHtml = '<img class="detail-img" src="" alt="" style="display:none;">';
+        }
+        const statusClass = 'status-' + (item.status || 'on_sale');
+        const statusText = item.status === 'sold' ? '已出' : item.status === 'off_shelf' ? '已下架' : '在售';
+        let actionsHtml = '';
+        if (item.is_owner) {
+          if (item.status === 'on_sale') {
+            actionsHtml = '<div class="actions" id="actions">' +
+              '<button type="button" class="btn-outline" data-action="off_shelf">下架</button>' +
+              '<button type="button" class="btn-outline" data-action="sold">已出</button>' +
+              '<button type="button" class="btn-danger" data-action="delete">删除</button></div>';
+          } else {
+            actionsHtml = '<div class="actions" id="actions"><button type="button" class="btn-danger" data-action="delete">删除</button></div>';
+          }
+        } else {
+          actionsHtml = '<div class="actions" id="actions">' +
+            '<button type="button" class="btn-pri" id="btn-fav" data-favorited="' + (item.is_favorited ? '1' : '0') + '">' + (item.is_favorited ? '取消收藏' : '收藏') + '</button></div>';
+        }
+        document.getElementById('main').innerHTML =
+          imgHtml +
+          '<div class="detail-title">' + escapeHtml(item.title) + ' <span class="status-tag ' + statusClass + '">' + statusText + '</span></div>' +
+          '<div class="detail-price">¥' + (item.price != null ? item.price : '') + '</div>' +
+          '<div class="detail-meta">' + escapeHtml(item.category || '未分类') + ' · 发布人 ' + escapeHtml(item.student_id) + ' · ' + (item.created_at ? item.created_at.slice(0, 10) : '') + '</div>' +
+          (item.description ? '<div class="detail-desc">' + escapeHtml(item.description) + '</div>' : '') +
+          (item.contact ? '<div class="detail-contact">联系方式：' + escapeHtml(item.contact) + '</div>' : '') +
+          actionsHtml;
+        const wrap = document.getElementById('imgWrap');
+        const actions = document.getElementById('actions');
+        if (actions) {
+          actions.querySelectorAll('[data-action]').forEach(btn => {
+            btn.onclick = function() {
+              const act = this.getAttribute('data-action');
+              if (act === 'off_shelf' || act === 'sold') {
+                fetch(base + '/api/second-hand/' + itemId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: act }), credentials: 'include' })
+                  .then(r => r.json()).then(d => { if (d.code === 0) window.location.reload(); else alert(d.message || '操作失败'); });
+              } else if (act === 'delete') {
+                if (!confirm('确定删除该商品？')) return;
+                fetch(base + '/api/second-hand/' + itemId, { method: 'DELETE', credentials: 'include' })
+                  .then(r => r.json()).then(d => { if (d.code === 0) window.location.href = base + '/second-hand'; else alert(d.message || '删除失败'); });
+              }
+            };
+          });
+          const btnFav = document.getElementById('btn-fav');
+          if (btnFav) {
+            btnFav.onclick = function() {
+              const favorited = this.getAttribute('data-favorited') === '1';
+              const method = favorited ? 'DELETE' : 'POST';
+              fetch(base + '/api/second-hand/' + itemId + '/favorite', { method: method, credentials: 'include' })
+                .then(r => r.json()).then(d => {
+                  if (d.code === 0) { this.setAttribute('data-favorited', d.favorited ? '1' : '0'); this.textContent = d.favorited ? '取消收藏' : '收藏'; }
+                });
+            };
+          }
+        }
+        const bigImg = document.getElementById('bigImg');
+        if (wrap && bigImg && wrap.querySelectorAll('img').length) {
+          wrap.querySelectorAll('img').forEach(img => {
+            img.onclick = function() {
+              wrap.querySelectorAll('img').forEach(i => i.classList.remove('active'));
+              this.classList.add('active');
+              bigImg.src = this.src;
+            };
+          });
+        }
+      })
+      .catch(() => { document.getElementById('main').innerHTML = '<p style="color:#dc2626;">网络错误</p>'; });
+  </script>
+</body>
+</html>

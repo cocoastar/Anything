@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>个人中心 - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <style>
+    body { margin: 0; min-height: 100vh; background: var(--bg); }
+    .app-header { margin-bottom: 0; }
+    .main { max-width: 480px; margin: 0 auto; padding: 24px; }
+    .card { background: var(--card); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 16px; box-shadow: var(--shadow); }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+    .form-group input { padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; font-family: var(--font); width: 100%; }
+    .form-group input:focus { outline: none; border-color: var(--pri); box-shadow: 0 0 0 3px var(--pri-focus); }
+    .form-group input[readonly] { background: var(--bg-subtle); color: var(--muted); }
+    .btn { display: inline-flex; align-items: center; padding: 10px 20px; background: var(--pri); color: #fff; border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500; cursor: pointer; font-family: var(--font); }
+    .btn:hover { background: var(--pri-hover); }
+    .msg { margin-top: 14px; font-size: 14px; }
+    .msg.ok { color: var(--success); }
+    .links a { display: flex; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border-light); color: var(--text); text-decoration: none; font-size: 15px; transition: color 0.15s; }
+    .links a:last-child { border-bottom: none; }
+    .links a:hover { color: var(--pri); }
+    .links a::after { content: '›'; margin-left: auto; color: var(--muted); font-size: 18px; }
+    .links a:hover::after { color: var(--pri); }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <h1>个人中心</h1>
+    <a href="{{ url_for('home_page') }}">返回工作台</a>
+  </header>
+  <main class="main">
+  <div class="card">
+    <div class="form-group">
+      <label>学号</label>
+      <input type="text" id="student_id" readonly disabled />
+    </div>
+    <div class="form-group">
+      <label>昵称</label>
+      <input type="text" id="nickname" placeholder="设置昵称" maxlength="64" />
+    </div>
+    <div class="form-group">
+      <label>积分</label>
+      <input type="text" id="points" readonly disabled />
+    </div>
+    <p class="form-group" style="font-size:13px;color:var(--muted);margin-top:-8px;">上传食堂菜品、发表面试经验、发布二手各 +5 积分</p>
+    <div class="msg" id="msg"></div>
+    <button type="button" class="btn" id="btn-save">保存</button>
+  </div>
+  <div class="card">
+    <div class="links">
+      <a href="{{ url_for('second_hand_list') }}?my=1">我的发布</a>
+      <a href="{{ url_for('second_hand_list') }}?favorite=1">我的收藏</a>
+    </div>
+  </div>
+  </main>
+  <script>
+    const base = window.location.origin || '';
+    fetch(base + '/api/profile', { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.code === 0 && data.profile) {
+          document.getElementById('student_id').value = data.profile.student_id || '';
+          document.getElementById('nickname').value = data.profile.nickname || '';
+          document.getElementById('points').value = (data.profile.points != null ? data.profile.points : 100) + ' 积分';
+        }
+      });
+    document.getElementById('btn-save').onclick = function() {
+      const nickname = document.getElementById('nickname').value.trim();
+      document.getElementById('msg').textContent = '保存中...';
+      document.getElementById('msg').className = 'msg';
+      fetch(base + '/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nickname: nickname }),
+        credentials: 'include',
+      })
+        .then(r => r.json())
+        .then(data => {
+          document.getElementById('msg').textContent = data.code === 0 ? '已保存' : (data.message || '保存失败');
+          document.getElementById('msg').className = 'msg ' + (data.code === 0 ? 'ok' : '');
+        })
+        .catch(() => { document.getElementById('msg').textContent = '网络异常'; document.getElementById('msg').className = 'msg'; });
+    };
+  </script>
+</body>
+</html>

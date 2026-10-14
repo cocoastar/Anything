@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>发布 - 二手交易 - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <style>
+    body { margin: 0; min-height: 100vh; background: var(--bg); }
+    .header { background: var(--card); padding: 16px 24px; box-shadow: var(--shadow); display: flex; align-items: center; justify-content: space-between; }
+    .header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .header a { color: var(--pri); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .main { max-width: 520px; margin: 0 auto; padding: 24px; }
+    .card { background: var(--card); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow); }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 500; color: var(--text); }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; font-family: var(--font); transition: border-color 0.15s, box-shadow 0.15s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--pri); box-shadow: 0 0 0 3px var(--pri-focus); }
+    .form-group textarea { min-height: 88px; resize: vertical; }
+    .btn { display: inline-flex; align-items: center; padding: 12px 24px; border: none; border-radius: var(--radius); cursor: pointer; font-size: 15px; font-weight: 500; font-family: var(--font); }
+    .btn-pri { background: var(--pri); color: #fff; }
+    .btn-pri:hover { background: var(--pri-hover); }
+    .btn-pri:disabled { opacity: 0.7; cursor: not-allowed; }
+    .msg { margin-top: 14px; font-size: 14px; }
+    .msg.err { color: var(--danger); }
+    .msg.ok { color: var(--success); }
+    .img-upload { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; }
+    .img-preview { width: 80px; height: 80px; border-radius: var(--radius-sm); object-fit: cover; border: 1px solid var(--border); }
+    .img-add { width: 80px; height: 80px; border: 2px dashed var(--border); border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--muted); font-size: 24px; transition: border-color 0.15s, color 0.15s; }
+    .img-add:hover { border-color: var(--pri); color: var(--pri); }
+    input[type=file] { display: none; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>发布商品</h1>
+    <a href="{{ url_for('second_hand_list') }}">← 返回列表</a>
+  </header>
+  <main class="main">
+  <div class="card">
+    <form id="form">
+      <div class="form-group">
+        <label>标题 *</label>
+        <input type="text" id="title" placeholder="简要描述商品" maxlength="200" required />
+      </div>
+      <div class="form-group">
+        <label>价格（元）*</label>
+        <input type="number" id="price" step="0.01" min="0" placeholder="0.00" required />
+      </div>
+      <div class="form-group">
+        <label>分类</label>
+        <select id="category">
+          <option value="">请选择</option>
+          <option value="书籍">书籍</option>
+          <option value="数码">数码</option>
+          <option value="生活用品">生活用品</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>描述</label>
+        <textarea id="description" placeholder="详细描述商品成色、使用情况等"></textarea>
+      </div>
+      <div class="form-group">
+        <label>图片（可多张）</label>
+        <div class="img-upload" id="img-upload">
+          <div class="img-add" id="img-add" title="添加图片">+</div>
+        </div>
+        <input type="file" id="file-input" accept="image/*" />
+      </div>
+      <div class="form-group">
+        <label>联系方式（选填，将脱敏展示）</label>
+        <input type="text" id="contact" placeholder="如：微信 xxx" maxlength="100" />
+      </div>
+      <div class="msg" id="msg"></div>
+      <button type="submit" class="btn btn-pri" id="btn-submit">发布</button>
+    </form>
+  </div>
+  </main>
+  <script>
+    const base = window.location.origin || '';
+    const imageUrls = [];
+
+    document.getElementById('img-add').onclick = () => document.getElementById('file-input').click();
+    document.getElementById('file-input').onchange = function() {
+      const f = this.files && this.files[0];
+      if (!f) return;
+      const fd = new FormData();
+      fd.append('file', f);
+      fd.append('bucket', 'second_hand');
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      fetch(base + '/api/upload', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 0 && data.url) {
+            imageUrls.push(data.url);
+            const div = document.getElementById('img-upload');
+            const img = document.createElement('img');
+            img.className = 'img-preview';
+            img.src = base + data.url;
+            div.insertBefore(img, document.getElementById('img-add'));
+          } else {
+            setMsg(data.message || '上传失败', true);
+          }
+        })
+        .catch(() => setMsg('上传失败', true))
+        .finally(() => { btn.disabled = false; this.value = ''; });
+    };
+
+    function setMsg(text, isErr) {
+      const el = document.getElementById('msg');
+      el.textContent = text || '';
+      el.className = 'msg' + (isErr ? ' err' : ' ok');
+    }
+
+    document.getElementById('form').onsubmit = function(e) {
+      e.preventDefault();
+      const title = document.getElementById('title').value.trim();
+      const price = document.getElementById('price').value;
+      if (!title) { setMsg('请填写标题', true); return; }
+      const p = parseFloat(price);
+      if (isNaN(p) || p < 0) { setMsg('请填写有效价格', true); return; }
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      setMsg('发布中...', false);
+      fetch(base + '/api/second-hand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title,
+          description: document.getElementById('description').value.trim(),
+          price: p,
+          category: document.getElementById('category').value || undefined,
+          image_urls: imageUrls,
+          contact: document.getElementById('contact').value.trim() || undefined,
+        }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 0) {
+            setMsg('发布成功', false);
+            setTimeout(() => { window.location.href = base + '/second-hand/' + data.id; }, 800);
+          } else {
+            setMsg(data.message || '发布失败', true);
+            btn.disabled = false;
+          }
+        })
+        .catch(() => { setMsg('网络异常', true); btn.disabled = false; });
+    };
+  </script>
+</body>
+</html>

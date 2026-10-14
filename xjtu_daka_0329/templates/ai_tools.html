@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI 工具合集 - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ai-bg: linear-gradient(160deg, #f0f4ff 0%, #e8eeff 50%, #f5f3ff 100%);
+      --ai-card-bg: #ffffff;
+      --ai-card-border: rgba(99, 102, 241, 0.12);
+      --ai-tab-active: #4f46e5;
+      --ai-tab-inactive: #64748b;
+      --ai-input-bg: #f8fafc;
+      --ai-input-focus: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      --ai-btn-bg: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+      --ai-btn-hover: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+      --ai-radius: 14px;
+      --ai-radius-sm: 10px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'DM Sans', var(--font);
+      background: var(--ai-bg);
+      color: var(--text);
+    }
+    .ai-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 24px;
+      background: var(--ai-card-bg);
+      box-shadow: 0 1px 0 var(--ai-card-border);
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .ai-header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+    .ai-header-links {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      font-size: 14px;
+    }
+    .ai-header-links .points {
+      color: var(--ai-tab-inactive);
+      font-weight: 500;
+    }
+    .ai-header-links .points strong {
+      color: var(--ai-tab-active);
+      font-weight: 700;
+    }
+    .ai-header-links a {
+      color: var(--ai-tab-active);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .ai-header-links a:hover { text-decoration: underline; }
+
+    .ai-nav {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 20px 24px 0;
+    }
+    .ai-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 6px;
+      background: rgba(255,255,255,0.8);
+      border-radius: var(--ai-radius);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--ai-card-border);
+    }
+    .ai-tab {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: var(--ai-radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      background: transparent;
+      color: var(--ai-tab-inactive);
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+    .ai-tab:hover { color: var(--ai-tab-active); background: rgba(79, 70, 229, 0.06); }
+    .ai-tab.active { background: var(--ai-btn-bg); color: #fff; }
+
+    .ai-main {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 28px 24px 48px;
+    }
+    .ai-panel {
+      display: none;
+      animation: ai-fadeIn 0.25s ease;
+    }
+    .ai-panel.active { display: block; }
+    @keyframes ai-fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .ai-card {
+      background: var(--ai-card-bg);
+      border-radius: var(--ai-radius);
+      padding: 28px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+      border: 1px solid var(--ai-card-border);
+    }
+    .ai-card-title {
+      margin: 0 0 6px;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .ai-card-desc {
+      font-size: 13px;
+      color: var(--ai-tab-inactive);
+      margin-bottom: 24px;
+    }
+    .ai-form-group {
+      margin-bottom: 20px;
+    }
+    .ai-form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .ai-form-group input,
+    .ai-form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--ai-radius-sm);
+      font-size: 15px;
+      font-family: inherit;
+      background: var(--ai-input-bg);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .ai-form-group input:focus,
+    .ai-form-group textarea:focus {
+      outline: none;
+      border-color: var(--ai-tab-active);
+      box-shadow: var(--ai-input-focus);
+    }
+    .ai-form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .ai-form-group input[type=file] {
+      padding: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+    .ai-form-row {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .ai-form-row .ai-form-group { flex: 1; min-width: 120px; }
+    .ai-btn {
+      padding: 14px 28px;
+      background: var(--ai-btn-bg);
+      color: #fff;
+      border: none;
+      border-radius: var(--ai-radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+      transition: all 0.2s ease;
+    }
+    .ai-btn:hover:not(:disabled) {
+      background: var(--ai-btn-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+    }
+    .ai-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+    .ai-result {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+    }
+    .ai-result img {
+      max-width: 100%;
+      border-radius: var(--ai-radius-sm);
+      display: block;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .ai-result video {
+      max-width: 100%;
+      border-radius: var(--ai-radius-sm);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    }
+    .ai-result audio { width: 100%; margin-top: 12px; }
+    .ai-status {
+      font-size: 14px;
+      margin-top: 14px;
+      min-height: 22px;
+      font-weight: 500;
+    }
+    .ai-status.loading { color: var(--ai-tab-inactive); }
+    .ai-status.error { color: var(--danger); }
+    .ai-status.ok { color: var(--success); }
+  </style>
+</head>
+<body>
+  <header class="ai-header">
+    <h1>AI 工具合集</h1>
+    <div class="ai-header-links">
+      <span class="points">积分 <strong id="user-points">--</strong></span>
+      <a href="{{ url_for('profile_page') }}">个人中心</a>
+      <a href="{{ url_for('home_page') }}">返回工作台</a>
+    </div>
+  </header>
+
+  <nav class="ai-nav">
+    <div class="ai-tabs">
+      <button type="button" class="ai-tab active" data-tab="t2i">文生图</button>
+      <button type="button" class="ai-tab" data-tab="i2v">图生视频</button>
+      <button type="button" class="ai-tab" data-tab="tts">语音克隆</button>
+    </div>
+  </nav>
+
+  <main class="ai-main">
+    <!-- 文生图 -->
+    <section class="ai-panel active" id="panel-t2i">
+      <div class="ai-card">
+        <h2 class="ai-card-title">文生图</h2>
+        <p class="ai-card-desc">根据文字描述生成图片，每次消耗 5 积分</p>
+        <div class="ai-form-group">
+          <label>描述</label>
+          <textarea id="t2i-prompt" placeholder="例如：一只可爱的猫咪在阳光下睡觉"></textarea>
+        </div>
+        <div class="ai-form-row">
+          <div class="ai-form-group">
+            <label>宽度</label>
+            <input type="number" id="t2i-width" value="512" min="256" max="1024" step="64" />
+          </div>
+          <div class="ai-form-group">
+            <label>高度</label>
+            <input type="number" id="t2i-height" value="512" min="256" max="1024" step="64" />
+          </div>
+        </div>
+        <button type="button" class="ai-btn" id="btn-t2i">生成图片</button>
+        <div class="ai-result" id="t2i-result"></div>
+        <div class="ai-status" id="t2i-status"></div>
+      </div>
+    </section>
+
+    <!-- 图生视频（单图 LightX2V） -->
+    <section class="ai-panel" id="panel-i2v">
+      <div class="ai-card">
+        <h2 class="ai-card-title">图生视频</h2>
+        <p class="ai-card-desc">上传一张图片并描述动作，生成短视频，每次消耗 20 积分</p>
+        <div class="ai-form-group">
+          <label>画面描述（动作 / 场景）</label>
+          <input type="text" id="i2v-prompt" placeholder="例如：猫咪缓缓转头，阳光洒在毛发上" />
+        </div>
+        <div class="ai-form-group">
+          <label>上传图片</label>
+          <input type="file" id="i2v-image" accept="image/*" />
+        </div>
+        <button type="button" class="ai-btn" id="btn-i2v">生成视频</button>
+        <div class="ai-result" id="i2v-result"></div>
+        <div class="ai-status" id="i2v-status"></div>
+      </div>
+    </section>
+
+    <!-- 语音克隆 -->
+    <section class="ai-panel" id="panel-tts">
+      <div class="ai-card">
+        <h2 class="ai-card-title">语音克隆</h2>
+        <p class="ai-card-desc">上传参考音频与对应文字，用参考音色合成新内容，每次消耗 5 积分</p>
+        <div class="ai-form-group">
+          <label>参考音频</label>
+          <input type="file" id="tts-audio" accept="audio/*" />
+        </div>
+        <div class="ai-form-group">
+          <label>参考音频中的文字</label>
+          <input type="text" id="tts-ref-text" placeholder="参考音频里说的内容" />
+        </div>
+        <div class="ai-form-group">
+          <label>要合成的文字</label>
+          <textarea id="tts-text" placeholder="用参考音色合成这段文字"></textarea>
+        </div>
+        <button type="button" class="ai-btn" id="btn-tts">生成语音</button>
+        <div class="ai-result" id="tts-result"></div>
+        <div class="ai-status" id="tts-status"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function () {
+      const base = window.location.origin || '';
+
+      function setStatus(id, msg, type) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'ai-status ' + (type || '');
+      }
+      function setResult(id, html) {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = html || '';
+      }
+
+      // 标签切换
+      document.querySelectorAll('.ai-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var t = this.getAttribute('data-tab');
+          document.querySelectorAll('.ai-tab').forEach(function (x) { x.classList.remove('active'); });
+          document.querySelectorAll('.ai-panel').forEach(function (p) { p.classList.remove('active'); });
+          this.classList.add('active');
+          var panel = document.getElementById('panel-' + t);
+          if (panel) panel.classList.add('active');
+        });
+      });
+
+      function parseJsonRes(r) {
+        return r.text().then(function (text) {
+          if (!text || !text.trim()) {
+            var msg = r.status === 502 || r.status === 503 ? 'AI 服务暂不可用，请稍后重试' : '服务器返回为空';
+            return { _err: msg, _status: r.status };
+          }
+          try {
+            var data = JSON.parse(text);
+            if (data && data.error && (r.status === 502 || r.status === 503)) data._serviceUnavailable = true;
+            return data;
+          } catch (e) {
+            return { _err: r.status === 502 || r.status === 503 ? 'AI 服务暂不可用' : '响应格式错误', _status: r.status };
+          }
+        });
+      }
+
+      fetch(base + '/api/profile', { credentials: 'include' })
+        .then(parseJsonRes)
+        .then(function (d) {
+          if (d._err) return;
+          var p = document.getElementById('user-points');
+          if (p) p.textContent = (d && d.points != null) ? d.points : '--';
+        })
+        .catch(function () {});
+
+      function pollJob(pollUrl, resultElId, statusElId, isVideo, isAudio) {
+        return function poll() {
+          return fetch(base + pollUrl, { credentials: 'include' })
+            .then(parseJsonRes)
+            .then(function (data) {
+              if (data._err) {
+                setStatus(statusElId, (data._serviceUnavailable ? '' : '请求失败: ') + (data.error || data._err), 'error');
+                return;
+              }
+              var status = (data.status || '').toLowerCase();
+              if (status === 'succeeded' || status === 'success') {
+                setStatus(statusElId, '生成成功', 'ok');
+                var url = data.resultUrl || '';
+                if (url) {
+                  if (isVideo) setResult(resultElId, '<video src="' + url + '" controls></video>');
+                  else if (isAudio) setResult(resultElId, '<audio src="' + url + '" controls></audio>');
+                  else setResult(resultElId, '<img src="' + url + '" alt="result" />');
+                }
+                return;
+              }
+              if (status === 'failed' || status === 'error' || status === 'canceled') {
+                setStatus(statusElId, data.message || '生成失败', 'error');
+                return;
+              }
+              setStatus(statusElId, (data.message || '生成中...') + (data.progress != null ? ' ' + Math.round(data.progress * 100) + '%' : ''), 'loading');
+              setTimeout(poll, 2500);
+            })
+            .catch(function (err) {
+              setStatus(statusElId, '请求失败: ' + (err.message || ''), 'error');
+            });
+        };
+      }
+
+      document.getElementById('btn-t2i').addEventListener('click', function () {
+        var btn = this;
+        var prompt = (document.getElementById('t2i-prompt').value || '').trim();
+        if (!prompt) { setStatus('t2i-status', '请输入描述', 'error'); return; }
+        setResult('t2i-result', '');
+        setStatus('t2i-status', '提交中...', 'loading');
+        btn.disabled = true;
+        fetch(base + '/api/ai/t2i', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: prompt,
+            width: parseInt(document.getElementById('t2i-width').value, 10) || 512,
+            height: parseInt(document.getElementById('t2i-height').value, 10) || 512,
+          }),
+        })
+          .then(parseJsonRes)
+          .then(function (data) {
+            if (data._err) {
+              setStatus('t2i-status', (data._serviceUnavailable ? '' : '请求失败: ') + (data.error || data._err), 'error');
+              btn.disabled = false;
+              return;
+            }
+            if (data.code === 'INSUFFICIENT_POINTS' || (data.error && data.error.indexOf('积分') !== -1)) {
+              setStatus('t2i-status', '积分不足', 'error');
+              btn.disabled = false;
+              return;
+            }
+            if (!data.ok || !data.jobId) {
+              setStatus('t2i-status', data.error || '提交失败', 'error');
+              btn.disabled = false;
+              return;
+            }
+            setStatus('t2i-status', '生成中...', 'loading');
+            pollJob('/api/ai/t2i/jobs/' + data.jobId, 't2i-result', 't2i-status', false, false)();
+            btn.disabled = false;
+          })
+          .catch(function (err) {
+            setStatus('t2i-status', '请求失败: ' + (err.message || ''), 'error');
+            btn.disabled = false;
+          });
+      });
+
+      document.getElementById('btn-i2v').addEventListener('click', function () {
+        var btn = this;
+        var prompt = (document.getElementById('i2v-prompt').value || '').trim();
+        var img = document.getElementById('i2v-image').files[0];
+        if (!prompt) { setStatus('i2v-status', '请输入画面描述', 'error'); return; }
+        if (!img) { setStatus('i2v-status', '请选择一张图片', 'error'); return; }
+        setResult('i2v-result', '');
+        setStatus('i2v-status', '提交中...', 'loading');
+        btn.disabled = true;
+        var fd = new FormData();
+        fd.append('prompt', prompt);
+        fd.append('image', img);
+        fetch(base + '/api/ai/i2v', { method: 'POST', credentials: 'include', body: fd })
+          .then(parseJsonRes)
+          .then(function (data) {
+            if (data._err) {
+              setStatus('i2v-status', (data._serviceUnavailable ? '' : '请求失败: ') + (data.error || data._err), 'error');
+              btn.disabled = false;
+              return;
+            }
+            if (data.code === 'INSUFFICIENT_POINTS' || (data.error && data.error.indexOf('积分') !== -1)) {
+              setStatus('i2v-status', '积分不足', 'error');
+              btn.disabled = false;
+              return;
+            }
+            if (!data.ok || !data.jobId) {
+              setStatus('i2v-status', data.error || '提交失败', 'error');
+              btn.disabled = false;
+              return;
+            }
+            setStatus('i2v-status', '生成中（图生视频较慢，请耐心等待）...', 'loading');
+            pollJob('/api/ai/i2v/jobs/' + data.jobId, 'i2v-result', 'i2v-status', true, false)();
+            btn.disabled = false;
+          })
+          .catch(function (err) {
+            setStatus('i2v-status', '请求失败: ' + (err.message || ''), 'error');
+            btn.disabled = false;
+          });
+      });
+
+      document.getElementById('btn-tts').addEventListener('click', function () {
+        var btn = this;
+        var refAudio = document.getElementById('tts-audio').files[0];
+        var refText = (document.getElementById('tts-ref-text').value || '').trim();
+        var text = (document.getElementById('tts-text').value || '').trim();
+        if (!refAudio) { setStatus('tts-status', '请上传参考音频', 'error'); return; }
+        if (!refText) { setStatus('tts-status', '请填写参考音频对应的文字', 'error'); return; }
+        if (!text) { setStatus('tts-status', '请填写要合成的文字', 'error'); return; }
+        setResult('tts-result', '');
+        setStatus('tts-status', '提交中...', 'loading');
+        btn.disabled = true;
+        var fd = new FormData();
+        fd.append('ref_audio', refAudio);
+        fd.append('ref_text', refText);
+        fd.append('text', text);
+        fd.append('language', 'Chinese');
+        fetch(base + '/api/ai/tts', { method: 'POST', credentials: 'include', body: fd })
+          .then(parseJsonRes)
+          .then(function (data) {
+            if (data._err) {
+              setStatus('tts-status', (data._serviceUnavailable ? '' : '请求失败: ') + (data.error || data._err), 'error');
+              btn.disabled = false;
+              return;
+            }
+            if (data.code === 'INSUFFICIENT_POINTS' || (data.error && data.error.indexOf('积分') !== -1)) {
+              setStatus('tts-status', '积分不足', 'error');
+              btn.disabled = false;
+              return;
+            }
+            if (!data.ok || !data.jobId) {
+              setStatus('tts-status', data.error || '提交失败', 'error');
+              btn.disabled = false;
+              return;
+            }
+            setStatus('tts-status', '生成中...', 'loading');
+            pollJob('/api/ai/tts/jobs/' + data.jobId, 'tts-result', 'tts-status', false, true)();
+            btn.disabled = false;
+          })
+          .catch(function (err) {
+            setStatus('tts-status', '请求失败: ' + (err.message || ''), 'error');
+            btn.disabled = false;
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>{{ title }} - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <style>
+    body { margin: 0; min-height: 100vh; }
+    .header { background: var(--card); padding: 16px 24px; box-shadow: var(--shadow); }
+    .header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .header a { color: var(--pri); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .main { max-width: 420px; margin: 48px auto; padding: 0 24px; }
+    .card { background: var(--card); border-radius: var(--radius-lg); padding: 48px 32px; text-align: center; box-shadow: var(--shadow); }
+    .card p { color: var(--muted); margin: 16px 0 24px; font-size: 15px; line-height: 1.6; }
+    .card a { color: var(--pri); text-decoration: none; font-weight: 500; }
+    .card a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>{{ title }}</h1>
+    <a href="{{ url_for('home_page') }}">返回工作台</a>
+  </header>
+  <main class="main">
+  <div class="card">
+    <p>该板块正在建设中，敬请期待。</p>
+    <a href="{{ url_for('home_page') }}">返回工作台</a>
+  </div>
+  </main>
+</body>
+</html>

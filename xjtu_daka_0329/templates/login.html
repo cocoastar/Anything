@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>登录 - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <style>
+    body, html { height: 100%; margin: 0; }
+    .page {
+      min-height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: linear-gradient(165deg, #e0e7ff 0%, #f0f4ff 35%, #f8fafc 100%);
+    }
+    .card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--card);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
+      padding: 40px 36px;
+    }
+    .card h1 { margin: 0 0 6px; font-size: 24px; font-weight: 600; color: var(--text); letter-spacing: -0.02em; }
+    .card .sub { color: var(--muted); font-size: 14px; margin-bottom: 28px; }
+    label { display: block; font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+    input[type="text"], input[type="password"] {
+      width: 100%; padding: 12px 14px; margin-bottom: 18px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; font-family: var(--font);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus { outline: none; border-color: var(--pri); box-shadow: 0 0 0 3px var(--pri-focus); }
+    .btn {
+      width: 100%; padding: 14px; border: none; border-radius: var(--radius);
+      font-size: 16px; font-weight: 500; cursor: pointer; font-family: var(--font);
+      background: var(--pri); color: #fff; transition: background 0.15s;
+    }
+    .btn:hover { background: var(--pri-hover); }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .hint { margin-top: 20px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .hint a { color: var(--pri); text-decoration: none; }
+    .hint a:hover { text-decoration: underline; }
+    .modal-mask { position: fixed; inset: 0; background: rgba(15,23,42,0.4); backdrop-filter: blur(4px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal-mask.show { display: flex; }
+    .modal { width: 100%; max-width: 380px; background: var(--card); border-radius: var(--radius-lg); padding: 28px; box-shadow: var(--shadow-lg); }
+    .modal h2 { margin: 0 0 8px; font-size: 18px; font-weight: 600; }
+    .modal .phone-hint { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .modal input { margin-bottom: 12px; }
+    .modal .modal-actions { display: flex; gap: 12px; margin-top: 20px; }
+    .modal .modal-actions .btn { flex: 1; }
+    .modal .link-btn { background: transparent; color: var(--pri); border: 1px solid var(--pri); }
+    .modal .mfa-err { color: var(--danger); font-size: 13px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>西交校园</h1>
+      <p class="sub">使用统一身份认证学号与密码登录</p>
+      <form id="login-form">
+        <label for="student_id">学号</label>
+        <input type="text" id="student_id" name="student_id" placeholder="10位学号" inputmode="numeric" autocomplete="username" required />
+        <label for="password">密码</label>
+        <input type="password" id="password" name="password" placeholder="统一身份认证密码" autocomplete="current-password" required />
+        <button type="submit" class="btn" id="btn-login">登录</button>
+      </form>
+      <p class="hint">
+        若提示图形验证码，请先在浏览器打开 <a href="https://ipahw.xjtu.edu.cn/" target="_blank">ipahw.xjtu.edu.cn</a> 登录一次后再试。
+      </p>
+    </div>
+  </div>
+
+  <!-- 短信验证码弹窗 -->
+  <div class="modal-mask" id="mfa-modal">
+    <div class="modal">
+      <h2>短信验证</h2>
+      <p class="phone-hint" id="mfa-phone-hint">已向您的安全手机发送验证码，请输入验证码</p>
+      <input type="text" id="mfa-code" placeholder="6位短信验证码" inputmode="numeric" maxlength="6" style="width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:10px;font-size:16px;" />
+      <div class="mfa-err" id="mfa-err"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="btn-mfa-submit">验证并继续</button>
+        <button type="button" class="btn link-btn" id="btn-mfa-cancel">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const base = window.location.origin || '';
+
+    function $(id) { return document.getElementById(id); }
+    function toast(msg) { alert(msg); }
+
+    const form = $('login-form');
+    const btnLogin = $('btn-login');
+    const modal = $('mfa-modal');
+    const mfaCode = $('mfa-code');
+    const mfaPhoneHint = $('mfa-phone-hint');
+    const mfaErr = $('mfa-err');
+
+    let pendingStudentId = '';
+    let pendingPassword = '';
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const student_id = $('student_id').value.trim();
+      const password = $('password').value;
+      if (!student_id) { toast('请输入学号'); return; }
+      if (!password) { toast('请输入密码'); return; }
+
+      btnLogin.disabled = true;
+      btnLogin.textContent = '登录中...';
+      mfaErr.textContent = '';
+
+      try {
+        const res = await fetch(base + '/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_id, password })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+          window.location.href = base + '/home';
+          return;
+        }
+
+        if (data.need_mfa) {
+          pendingStudentId = student_id;
+          pendingPassword = password;
+          mfaPhoneHint.textContent = data.message || ('已向安全手机 ' + (data.mask_phone || '') + ' 发送验证码，请输入验证码');
+          mfaCode.value = '';
+          modal.classList.add('show');
+          mfaCode.focus();
+          btnLogin.disabled = false;
+          btnLogin.textContent = '登录';
+          return;
+        }
+
+        toast(data.message || '登录失败');
+      } catch (err) {
+        toast('网络异常，请稍后再试');
+      }
+      btnLogin.disabled = false;
+      btnLogin.textContent = '登录';
+    });
+
+    $('btn-mfa-submit').addEventListener('click', async () => {
+      const code = mfaCode.value.trim();
+      if (!code) { mfaErr.textContent = '请输入验证码'; return; }
+      mfaErr.textContent = '';
+      const btn = $('btn-mfa-submit');
+      btn.disabled = true;
+      btn.textContent = '验证中...';
+      try {
+        const res = await fetch(base + '/api/login_verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            student_id: pendingStudentId,
+            password: pendingPassword,
+            code
+          })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          modal.classList.remove('show');
+          window.location.href = base + '/home';
+          return;
+        }
+        mfaErr.textContent = data.message || '验证失败，请重试';
+      } catch (err) {
+        mfaErr.textContent = '网络异常';
+      }
+      btn.disabled = false;
+      btn.textContent = '验证并继续';
+    });
+
+    $('btn-mfa-cancel').addEventListener('click', () => {
+      modal.classList.remove('show');
+      pendingStudentId = '';
+      pendingPassword = '';
+    });
+  </script>
+</body>
+</html>

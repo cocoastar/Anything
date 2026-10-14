@@ -1,0 +1,12 @@
+# 西交体育打卡 Web 项目依赖
+Flask>=2.0
+requests>=2.28
+beautifulsoup4>=4.11
+pycryptodome>=3.15
+cryptography>=40.0
+
+# 数据库与上传
+Flask-SQLAlchemy>=3.0
+Flask-Migrate>=4.0
+Pillow>=10.0
+python-dotenv>=1.0

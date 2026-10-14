@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>面试经验 - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: var(--card); box-shadow: var(--shadow); flex-wrap: wrap; gap: 12px; }
+    .header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .header a { color: var(--pri); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .layout { display: flex; max-width: 1200px; margin: 0 auto; padding: 20px; gap: 24px; }
+    .main { flex: 1; min-width: 0; }
+    .sidebar { width: 260px; flex-shrink: 0; }
+    .card { background: var(--card); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
+    .card h3 { margin: 0 0 8px; font-size: 16px; }
+    .card .meta { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
+    .card .excerpt { color: var(--text); font-size: 14px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card.clickable { cursor: pointer; text-decoration: none; color: inherit; display: block; }
+    .card.clickable:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .post-detail .post-title { font-size: 20px; margin: 0 0 12px; }
+    .post-detail .post-meta { color: var(--muted); font-size: 14px; margin-bottom: 16px; }
+    .post-detail .post-body { white-space: pre-wrap; word-break: break-word; line-height: 1.7; font-size: 14px; margin-bottom: 24px; }
+    .post-detail .post-body h2 { font-size: 16px; margin: 20px 0 10px; }
+    .sidebar .section-title { font-size: 14px; font-weight: 600; margin: 0 0 12px; color: var(--text); }
+    .sidebar .company-list { list-style: none; padding: 0; margin: 0 0 20px; }
+    .sidebar .company-list li { padding: 8px 0; border-bottom: 1px solid #f1f5f9; }
+    .sidebar .company-list li a { color: var(--text); text-decoration: none; font-size: 14px; }
+    .sidebar .company-list li a:hover, .sidebar .company-list li.active a { color: var(--pri); }
+    .sidebar .filter-types { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .sidebar .filter-types button { padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; cursor: pointer; font-size: 13px; }
+    .sidebar .filter-types button:hover, .sidebar .filter-types button.active { background: var(--pri); color: #fff; border-color: var(--pri); }
+    .btn { display: inline-block; padding: 10px 18px; background: var(--pri); color: #fff; border: none; border-radius: 10px; cursor: pointer; text-decoration: none; font-size: 14px; }
+    .btn-outline { background: #f1f5f9; color: var(--text); }
+    .add-company { display: flex; gap: 8px; margin-bottom: 20px; }
+    .add-company input { flex: 1; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+    .comment-list { margin-top: 16px; }
+    .comment-item { padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+    .comment-item .comment-meta { color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+    .comment-item .comment-content { font-size: 14px; line-height: 1.5; }
+    .comment-form { margin-top: 16px; }
+    .comment-form textarea { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; min-height: 80px; resize: vertical; }
+    .comment-form button { margin-top: 8px; }
+    .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal-mask.show { display: flex; }
+    .modal { background: var(--card); border-radius: 16px; padding: 24px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { margin: 0 0 16px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; margin-bottom: 4px; font-size: 14px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+    .form-group textarea { min-height: 200px; resize: vertical; }
+    .modal-actions { margin-top: 16px; display: flex; gap: 10px; }
+    .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
+    /* 移动端：侧边栏收起为抽屉，主内容全宽 */
+    .btn-sidebar-toggle { display: none; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--pri); background: #fff; color: var(--pri); font-size: 14px; cursor: pointer; }
+    .sidebar-close { display: none; margin-bottom: 12px; padding: 8px 12px; border: none; border-radius: 8px; background: #f1f5f9; font-size: 14px; cursor: pointer; width: 100%; }
+    .sidebar-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 498; }
+    .sidebar-mask.show { display: block; }
+    @media (max-width: 768px) {
+      .layout { flex-direction: column; padding: 12px; gap: 0; }
+      .main { width: 100%; }
+      .sidebar { position: fixed; top: 0; right: 0; bottom: 0; width: min(280px, 85vw); z-index: 500; transform: translateX(100%); transition: transform 0.25s ease; overflow-y: auto; box-shadow: -4px 0 20px rgba(0,0,0,0.15); margin: 0; border-radius: 0; }
+      .sidebar.open { transform: translateX(0); }
+      .btn-sidebar-toggle { display: inline-block; }
+      .sidebar-close { display: block; }
+    }
+    @media (min-width: 769px) {
+      .sidebar-mask.show { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>面试经验</h1>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button type="button" class="btn-sidebar-toggle" id="btn-sidebar-toggle" aria-label="打开分类">筛选</button>
+      <a href="{{ url_for('home_page') }}">返回工作台</a>
+    </div>
+  </header>
+
+  <div class="sidebar-mask" id="sidebar-mask"></div>
+  <div class="layout">
+    <main class="main">
+      <div id="post-list"></div>
+      <div id="post-detail" class="card post-detail" style="display:none;">
+        <a href="#" id="back-to-list" style="font-size:14px;color:var(--muted);margin-bottom:8px;display:inline-block;">← 返回列表</a>
+        <h2 class="post-title" id="detail-title"></h2>
+        <div class="post-meta" id="detail-meta"></div>
+        <div class="post-body" id="detail-body"></div>
+        <div class="comment-list" id="comment-list"></div>
+        <div class="comment-form">
+          <textarea id="comment-content" placeholder="写下你的评论..."></textarea>
+          <button type="button" class="btn" id="btn-comment">发表评论</button>
+        </div>
+      </div>
+      <div class="empty" id="empty-list" style="display:none;">暂无帖子，快来发布第一条面经吧</div>
+    </main>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="card">
+        <button type="button" class="sidebar-close" id="sidebar-close">关闭</button>
+        <div class="section-title">按公司分类</div>
+        <ul class="company-list" id="company-list"></ul>
+        <div class="add-company">
+          <input type="text" id="new-company-name" placeholder="添加公司名称" />
+          <button type="button" class="btn btn-outline" id="btn-add-company">添加</button>
+        </div>
+        <div class="section-title">面试分类</div>
+        <div class="filter-types" id="filter-types">
+          <button type="button" data-type="">全部</button>
+          <button type="button" data-type="秋招">秋招</button>
+          <button type="button" data-type="春招">春招</button>
+          <button type="button" data-type="暑期实习">暑期实习</button>
+          <button type="button" data-type="日常实习">日常实习</button>
+        </div>
+        <button type="button" class="btn" id="btn-publish" style="width:100%;">发帖</button>
+      </div>
+    </aside>
+  </div>
+
+  <div class="modal-mask" id="publish-modal">
+    <div class="modal">
+      <h3>发布面经</h3>
+      <div class="form-group">
+        <label>公司 *</label>
+        <select id="publish-company">
+          <option value="">请选择公司</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>面试类型 *</label>
+        <select id="publish-type">
+          <option value="秋招">秋招</option>
+          <option value="春招">春招</option>
+          <option value="暑期实习">暑期实习</option>
+          <option value="日常实习">日常实习</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>标题 *</label>
+        <input type="text" id="publish-title" placeholder="如：25秋招面试百度大模型算法工程师面经" />
+      </div>
+      <div class="form-group">
+        <label>正文</label>
+        <textarea id="publish-body" placeholder="可写时间线、面试内容、题目等，支持换行"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" id="publish-cancel">取消</button>
+        <button type="button" class="btn" id="publish-ok">发布</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const base = window.location.origin || '';
+    let companies = [];
+    let currentCompanyId = null;
+    let currentInterviewType = '';
+    let currentPostId = null;
+
+    function loadCompanies() {
+      fetch(base + '/api/forum/interview/companies')
+        .then(r => r.json())
+        .then(data => {
+          companies = data.companies || [];
+          const ul = document.getElementById('company-list');
+          ul.innerHTML = '';
+          const allLi = document.createElement('li');
+          allLi.innerHTML = '<a href="#" data-id="">全部</a>';
+          allLi.classList.toggle('active', !currentCompanyId);
+          ul.appendChild(allLi);
+          companies.forEach(c => {
+            const li = document.createElement('li');
+            li.classList.toggle('active', currentCompanyId === c.id);
+            li.innerHTML = '<a href="#" data-id="' + c.id + '">' + escapeHtml(c.name) + '</a>';
+            ul.appendChild(li);
+          });
+          ul.querySelectorAll('a').forEach(a => {
+            a.onclick = function(e) { e.preventDefault(); setCompanyFilter(a.dataset.id ? parseInt(a.dataset.id, 10) : null); };
+          });
+          const sel = document.getElementById('publish-company');
+          sel.innerHTML = '<option value="">请选择公司</option>';
+          companies.forEach(c => { sel.appendChild(new Option(c.name, c.id)); });
+        })
+        .catch(() => {});
+    }
+
+    function setCompanyFilter(id) {
+      currentCompanyId = id || null;
+      document.querySelectorAll('#company-list li').forEach((li, i) => {
+        const a = li.querySelector('a');
+        li.classList.toggle('active', (id == null && i === 0) || (a && a.dataset.id === String(id)));
+      });
+      loadPosts();
+      if (window.innerWidth <= 768) closeSidebar();
+    }
+
+    function setTypeFilter(type) {
+      currentInterviewType = type || '';
+      document.querySelectorAll('#filter-types button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === currentInterviewType);
+      });
+      loadPosts();
+      if (window.innerWidth <= 768) closeSidebar();
+    }
+
+    function loadPosts() {
+      let url = base + '/api/forum/interview/posts?page=1&size=50';
+      if (currentCompanyId) url += '&company_id=' + currentCompanyId;
+      if (currentInterviewType) url += '&interview_type=' + encodeURIComponent(currentInterviewType);
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          const list = document.getElementById('post-list');
+          const empty = document.getElementById('empty-list');
+          list.innerHTML = '';
+          if (!data.posts || data.posts.length === 0) {
+            empty.style.display = 'block';
+            return;
+          }
+          empty.style.display = 'none';
+          data.posts.forEach(p => {
+            const a = document.createElement('a');
+            a.className = 'card clickable';
+            a.href = '#';
+            a.dataset.id = p.id;
+            const excerpt = (p.body || '').slice(0, 120);
+            a.innerHTML = '<h3>' + escapeHtml(p.title) + '</h3>' +
+              '<div class="meta">' + escapeHtml(p.company_name || '') + ' · ' + (p.interview_type || '') + ' · ' + (p.created_at ? p.created_at.slice(0, 10) : '') + '</div>' +
+              '<div class="excerpt">' + escapeHtml(excerpt) + (excerpt.length >= 120 ? '...' : '') + '</div>';
+            a.onclick = function(e) { e.preventDefault(); showPost(p.id); };
+            list.appendChild(a);
+          });
+        })
+        .catch(() => { document.getElementById('empty-list').style.display = 'block'; });
+    }
+
+    function showPost(postId) {
+      currentPostId = postId;
+      document.getElementById('post-list').style.display = 'none';
+      document.getElementById('post-detail').style.display = 'block';
+      document.getElementById('empty-list').style.display = 'none';
+      fetch(base + '/api/forum/interview/posts/' + postId)
+        .then(r => r.json())
+        .then(data => {
+          if (data.code !== 0) return;
+          const p = data.post;
+          document.getElementById('detail-title').textContent = p.title;
+          document.getElementById('detail-meta').textContent = (p.company_name || '') + ' · ' + (p.interview_type || '') + ' · ' + (p.created_at ? p.created_at.slice(0, 16) : '');
+          document.getElementById('detail-body').textContent = p.body || '';
+          const list = document.getElementById('comment-list');
+          list.innerHTML = '';
+          (data.comments || []).forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'comment-item';
+            div.innerHTML = '<div class="comment-meta">' + escapeHtml(c.student_id) + ' · ' + (c.created_at ? c.created_at.slice(0, 16) : '') + '</div>' +
+              '<div class="comment-content">' + escapeHtml(c.content) + '</div>';
+            list.appendChild(div);
+          });
+          document.getElementById('comment-content').value = '';
+        })
+        .catch(() => {});
+    }
+
+    function backToList() {
+      currentPostId = null;
+      document.getElementById('post-detail').style.display = 'none';
+      document.getElementById('post-list').style.display = 'block';
+      loadPosts();
+    }
+
+    document.getElementById('btn-comment').onclick = function() {
+      const content = document.getElementById('comment-content').value.trim();
+      if (!content) { alert('请填写评论内容'); return; }
+      if (!currentPostId) return;
+      fetch(base + '/api/forum/interview/posts/' + currentPostId + '/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: content }),
+        credentials: 'include',
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 0) showPost(currentPostId);
+          else alert(data.message || '评论失败');
+        })
+        .catch(() => alert('网络异常'));
+    };
+
+    document.getElementById('btn-add-company').onclick = function() {
+      const name = document.getElementById('new-company-name').value.trim();
+      if (!name) { alert('请填写公司名称'); return; }
+      fetch(base + '/api/forum/interview/companies', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name }),
+        credentials: 'include',
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 0) {
+            document.getElementById('new-company-name').value = '';
+            loadCompanies();
+          } else alert(data.message || '添加失败');
+        })
+        .catch(() => alert('网络异常'));
+    };
+
+    document.querySelectorAll('#filter-types button').forEach(btn => {
+      btn.onclick = function() { setTypeFilter(this.dataset.type); };
+    });
+
+    document.getElementById('btn-publish').onclick = function() {
+      document.getElementById('publish-title').value = '';
+      document.getElementById('publish-body').value = '';
+      document.getElementById('publish-modal').classList.add('show');
+    };
+    document.getElementById('publish-cancel').onclick = function() {
+      document.getElementById('publish-modal').classList.remove('show');
+    };
+    document.getElementById('publish-ok').onclick = function() {
+      const companyId = document.getElementById('publish-company').value;
+      const interviewType = document.getElementById('publish-type').value;
+      const title = document.getElementById('publish-title').value.trim();
+      const body = document.getElementById('publish-body').value.trim();
+      if (!title) { alert('请填写标题'); return; }
+      if (!companyId) { alert('请选择公司'); return; }
+      fetch(base + '/api/forum/interview/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title, body: body, company_id: parseInt(companyId, 10), interview_type: interviewType }),
+        credentials: 'include',
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.code === 0) {
+            document.getElementById('publish-modal').classList.remove('show');
+            if (document.getElementById('post-detail').style.display === 'block') backToList();
+            else loadPosts();
+          } else alert(data.message || '发布失败');
+        })
+        .catch(() => alert('网络异常'));
+    };
+
+    document.getElementById('back-to-list').onclick = function(e) { e.preventDefault(); backToList(); };
+
+    function openSidebar() {
+      document.getElementById('sidebar').classList.add('open');
+      document.getElementById('sidebar-mask').classList.add('show');
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-mask').classList.remove('show');
+    }
+    document.getElementById('btn-sidebar-toggle').onclick = openSidebar;
+    document.getElementById('sidebar-close').onclick = closeSidebar;
+    document.getElementById('sidebar-mask').onclick = closeSidebar;
+
+    function escapeHtml(s) {
+      if (!s) return '';
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    loadCompanies();
+    loadPosts();
+  </script>
+</body>
+</html>

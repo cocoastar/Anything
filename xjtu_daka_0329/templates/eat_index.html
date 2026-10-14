@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>西交吃什么 - 西交校园</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='base.css') }}" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; background: var(--card); box-shadow: var(--shadow); flex-wrap: wrap; gap: 12px; }
+    .header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+    .header a, .header .btn-link { color: var(--pri); text-decoration: none; font-size: 14px; font-weight: 500; }
+    .header .btn-link { background: none; border: none; cursor: pointer; padding: 0; }
+    .nav-row { background: var(--card); padding: 16px 24px; box-shadow: var(--shadow); }
+    .nav-row-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 10px; }
+    .nav-canteens { display: flex; flex-wrap: wrap; gap: 8px; }
+    .nav-canteens button, .nav-floors button, .nav-windows .win-btn { padding: 9px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--card); cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text); transition: all 0.15s; }
+    .nav-canteens button:hover, .nav-floors button:hover, .nav-windows .win-btn:hover { border-color: var(--pri); color: var(--pri); }
+    .nav-canteens button.active, .nav-floors button.active, .nav-windows .win-btn.active { background: var(--pri); color: #fff; border-color: var(--pri); }
+    .nav-floors { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .nav-floors .nav-row-title { margin-bottom: 6px; }
+    .nav-windows { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .nav-windows .nav-row-title { margin-bottom: 6px; }
+    .content { max-width: 720px; margin: 0 auto; padding: 24px; }
+    .empty-tip { text-align: center; padding: 56px 20px; color: var(--muted); font-size: 15px; }
+    .window-detail { background: var(--card); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow); }
+    .window-detail h2 { margin: 0 0 16px; font-size: 18px; }
+    .window-imgs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .window-imgs img { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; }
+    .window-imgs .add-img { width: 80px; height: 80px; border: 2px dashed #e2e8f0; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; font-size: 24px; }
+    .window-imgs .add-img:hover { border-color: var(--pri); color: var(--pri); }
+    .dish-table { width: 100%; border-collapse: collapse; }
+    .dish-table th, .dish-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+    .dish-table th { color: var(--muted); font-weight: 500; }
+    .dish-price { color: #dc2626; font-weight: 500; }
+    .dish-actions { display: flex; gap: 8px; }
+    .dish-actions button { padding: 4px 10px; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; cursor: pointer; font-size: 12px; }
+    .dish-actions button:hover { border-color: var(--pri); color: var(--pri); }
+    .dish-reviews { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e2e8f0; }
+    .dish-review-item { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .dish-review-item .stars { color: #f59e0b; }
+    .dish-review-imgs { display: flex; gap: 4px; margin-top: 4px; }
+    .dish-review-imgs img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+    input[type=file] { display: none; }
+    .window-reviews { margin-top: 16px; padding-top: 16px; border-top: 1px solid #f1f5f9; }
+    .window-reviews-title { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+    .review-item { padding: 8px 0; font-size: 13px; border-bottom: 1px solid #f1f5f9; }
+    .modal-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+    .modal-mask.show { display: flex; }
+    .modal { background: var(--card); border-radius: 16px; padding: 24px; max-width: 420px; width: 100%; max-height: 90vh; overflow-y: auto; }
+    .modal h3 { margin: 0 0 16px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; margin-bottom: 4px; font-size: 14px; }
+    .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; }
+    .modal .stars { margin: 8px 0; }
+    .modal .stars span { cursor: pointer; font-size: 22px; color: #e2e8f0; }
+    .modal .stars span.on { color: #f59e0b; }
+    .modal-actions { margin-top: 16px; display: flex; gap: 10px; }
+    .modal-actions button { flex: 1; padding: 10px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; }
+    .btn-pri { background: var(--pri); color: #fff; }
+    .btn-outline { background: #f1f5f9; color: var(--text); }
+    .dish-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+    .input-with-opt select, .input-with-opt input { width: 100%; }
+    .inline-label { display: inline-flex; align-items: center; gap: 6px; margin-top: 6px; font-size: 13px; color: var(--muted); }
+    .dish-actions-form { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+    .btn-small { padding: 6px 12px; font-size: 13px; border-radius: 8px; border: 1px solid #e2e8f0; background: #f8fafc; cursor: pointer; }
+    #sub-dishes-list .dish-row .remove-dish { flex: 0; padding: 4px 10px; color: var(--muted); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>西交吃什么</h1>
+    <div>
+      <a href="{{ url_for('home_page') }}">工作台</a>
+      <span style="margin:0 8px;">|</span>
+      <button type="button" class="btn-link" id="btn-submit">提交食堂信息</button>
+    </div>
+  </header>
+
+  <div class="nav-row">
+    <div class="nav-row-title">餐厅</div>
+    <div class="nav-canteens" id="nav-canteens"></div>
+    <div class="nav-row-title" id="floor-label" style="display:none;">楼层</div>
+    <div class="nav-floors" id="nav-floors"></div>
+    <div class="nav-row-title" id="window-label" style="display:none;">窗口</div>
+    <div class="nav-windows" id="nav-windows"></div>
+  </div>
+
+  <div class="content">
+    <div id="content-area">
+      <div class="empty-tip" id="tip-select-window">请先选择上方餐厅 → 楼层 → 窗口</div>
+    </div>
+  </div>
+
+  <!-- 菜品评论弹窗 -->
+  <div class="modal-mask" id="dish-review-modal">
+    <div class="modal">
+      <h3 id="dish-review-title">评价菜品</h3>
+      <div class="form-group">
+        <div class="stars" id="dish-review-stars">☆☆☆☆☆</div>
+        <textarea id="dish-review-content" placeholder="写下评价（选填）" rows="3"></textarea>
+        <div style="margin-top:8px;"><button type="button" class="btn-small" id="dish-review-add-img">添加图片</button></div>
+        <div id="dish-review-imgs" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" id="dish-review-cancel">取消</button>
+        <button type="button" class="btn-pri" id="dish-review-submit">提交评价</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提交食堂信息弹窗（保留原有表单） -->
+  <div class="modal-mask" id="submit-modal">
+    <div class="modal">
+      <h3>提交食堂信息（待审核后展示）</h3>
+      <div class="form-group">
+        <label>餐厅 *</label>
+        <div class="input-with-opt">
+          <select id="sub-canteen-select"><option value="">-- 请选择或新建 --</option></select>
+          <input type="text" id="sub-canteen-new" placeholder="新建餐厅名" style="display:none;" />
+        </div>
+        <label class="inline-label"><input type="checkbox" id="sub-canteen-is-new" /> 新建餐厅</label>
+      </div>
+      <div class="form-group">
+        <label>楼层 *</label>
+        <select id="sub-floor"></select>
+      </div>
+      <div class="form-group">
+        <label>窗口 *</label>
+        <div class="input-with-opt">
+          <select id="sub-window-select"><option value="">-- 请先选餐厅与楼层 --</option></select>
+          <input type="text" id="sub-window-new" placeholder="新建窗口名" style="display:none;" />
+        </div>
+        <label class="inline-label"><input type="checkbox" id="sub-window-is-new" /> 新建窗口</label>
+      </div>
+      <div class="form-group">
+        <label>菜品与价格</label>
+        <div class="dish-actions-form">
+          <select id="sub-dish-pick"><option value="">-- 选择已有菜品 --</option></select>
+          <button type="button" class="btn-small" id="sub-dish-add-row">+ 添加一行</button>
+        </div>
+        <div id="sub-dishes-list"></div>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" id="btn-cancel">取消</button>
+        <button type="button" class="btn-pri" id="btn-ok">提交</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const base = window.location.origin || '';
+    const DEFAULT_CANTEEN_NAMES = ['惠风苑', '朗清苑', '同和苑', '和鸣苑', '涵英楼负一'];
+    let allCanteens = [];
+    let canteenDetail = null;
+    let currentCanteenId = null;
+    let currentFloor = null;
+    let currentWindow = null;
+    let dishReviewDishId = null;
+    let dishReviewImgUrls = [];
+    let dishReviewRating = 0;
+
+    function esc(s) { const d = document.createElement('div'); d.textContent = s == null ? '' : s; return d.innerHTML; }
+    function starStr(n) { let s = ''; for (let i = 1; i <= 5; i++) s += i <= n ? '★' : '☆'; return s; }
+
+    function loadCanteens() {
+      fetch(base + '/api/eat/canteens').then(r => r.json()).then(data => {
+        allCanteens = (data.canteens || []).filter(c => DEFAULT_CANTEEN_NAMES.includes(c.name));
+        if (allCanteens.length === 0) allCanteens = data.canteens || [];
+        const nav = document.getElementById('nav-canteens');
+        nav.innerHTML = '';
+        allCanteens.forEach(c => {
+          const btn = document.createElement('button');
+          btn.textContent = c.name;
+          btn.dataset.id = c.id;
+          btn.onclick = () => selectCanteen(c.id);
+          nav.appendChild(btn);
+        });
+        const q = new URLSearchParams(window.location.search);
+        const wantId = q.get('canteen_id');
+        if (allCanteens.length > 0) {
+          if (wantId && allCanteens.some(c => String(c.id) === wantId)) selectCanteen(parseInt(wantId, 10));
+          else if (!currentCanteenId) selectCanteen(allCanteens[0].id);
+        }
+      });
+    }
+
+    function selectCanteen(id) {
+      currentCanteenId = id;
+      currentFloor = null;
+      currentWindow = null;
+      document.querySelectorAll('#nav-canteens button').forEach(b => b.classList.toggle('active', b.dataset.id === String(id)));
+      document.getElementById('nav-floors').innerHTML = '';
+      document.getElementById('nav-windows').innerHTML = '';
+      document.getElementById('floor-label').style.display = 'none';
+      document.getElementById('window-label').style.display = 'none';
+      document.getElementById('content-area').innerHTML = '<div class="empty-tip" id="tip-select-window">请选择楼层与窗口</div>';
+      fetch(base + '/api/eat/canteens/' + id).then(r => r.json()).then(data => {
+        canteenDetail = data.code === 0 ? data : null;
+        if (!canteenDetail || !canteenDetail.floors) return;
+        const floors = Object.keys(canteenDetail.floors).map(Number).sort((a, b) => a - b);
+        const fl = document.getElementById('nav-floors');
+        fl.innerHTML = '';
+        document.getElementById('floor-label').style.display = 'block';
+        floors.forEach(f => {
+          const btn = document.createElement('button');
+          btn.textContent = f === -1 ? '负一层' : f + ' 层';
+          btn.dataset.floor = f;
+          btn.onclick = () => selectFloor(f);
+          fl.appendChild(btn);
+        });
+        if (floors.length > 0) selectFloor(floors[0]);
+      });
+    }
+
+    function selectFloor(floor) {
+      currentFloor = floor;
+      currentWindow = null;
+      document.querySelectorAll('#nav-floors button').forEach(b => b.classList.toggle('active', Number(b.dataset.floor) === floor));
+      document.getElementById('nav-windows').innerHTML = '';
+      document.getElementById('window-label').style.display = 'none';
+      document.getElementById('content-area').innerHTML = '<div class="empty-tip" id="tip-select-window">请选择窗口</div>';
+      if (!canteenDetail || !canteenDetail.floors[floor]) return;
+      const wins = canteenDetail.floors[floor] || [];
+      const nw = document.getElementById('nav-windows');
+      nw.innerHTML = '';
+      document.getElementById('window-label').style.display = 'block';
+      wins.forEach((item, idx) => {
+        const w = item.window;
+        if (!w) return;
+        const btn = document.createElement('button');
+        btn.className = 'win-btn';
+        btn.textContent = w.name;
+        btn.onclick = () => selectWindow(item);
+        nw.appendChild(btn);
+      });
+      if (wins.length > 0) selectWindow(wins[0]);
+    }
+
+    function selectWindow(item) {
+      currentWindow = item;
+      const w = item.window;
+      const wins = document.querySelectorAll('#nav-windows .win-btn');
+      wins.forEach((b, i) => b.classList.toggle('active', currentWindow === (canteenDetail.floors[currentFloor] || [])[i]));
+      renderWindowDetail(w, item.dishes || [], item.reviews || []);
+    }
+
+    function renderWindowDetail(w, dishes, windowReviews) {
+      const winId = w.id;
+      const imgs = w.image_urls || [];
+      let imgHtml = imgs.map(url => '<img src="' + base + url + '" alt="">').join('');
+      imgHtml += '<div class="add-img" data-wid="' + winId + '" title="上传窗口图片">+</div>';
+      let dishRows = (dishes || []).map(d => {
+        const price = d.price != null ? '¥' + d.price : (d.price_min != null && d.price_max != null ? '¥' + d.price_min + '-' + d.price_max : '');
+        const reviews = (d.reviews || []).map(r => {
+          let ri = (r.image_urls || []).map(u => '<img src="' + base + u + '" alt="">').join('');
+          return '<div class="dish-review-item">' +
+            '<span class="stars">' + starStr(r.rating) + '</span> ' + esc(r.student_id) + ' ' + (r.created_at ? r.created_at.slice(0, 10) : '') +
+            (r.content ? '<div>' + esc(r.content) + '</div>' : '') +
+            (ri ? '<div class="dish-review-imgs">' + ri + '</div>' : '') + '</div>';
+        }).join('');
+        return '<tr data-dish-id="' + d.id + '">' +
+          '<td>' + esc(d.name) + '</td>' +
+          '<td class="dish-price">' + price + '</td>' +
+          '<td><div class="dish-actions">' +
+          '<button type="button" class="btn-dish-upload" data-dish-id="' + d.id + '" data-name="' + esc(d.name) + '">上传图片</button> ' +
+          '<button type="button" class="btn-dish-review" data-dish-id="' + d.id + '" data-name="' + esc(d.name) + '">评论</button>' +
+          '</div>' + (reviews ? '<div class="dish-reviews">' + reviews + '</div>' : '') + '</td></tr>';
+      }).join('');
+      if (!dishRows) dishRows = '<tr><td colspan="3" style="color:var(--muted);">暂无菜品，欢迎在首页「提交食堂信息」补充</td></tr>';
+      const windowReviewsHtml = (windowReviews || []).map(r =>
+        '<div class="review-item">' + starStr(r.rating) + ' ' + esc(r.student_id) + ' ' + (r.created_at ? r.created_at.slice(0, 10) : '') + (r.content ? '<br>' + esc(r.content) : '') + '</div>'
+      ).join('');
+      const html = '<div class="window-detail">' +
+        '<h2>' + esc(w.name) + '</h2>' +
+        '<div class="window-imgs" id="win-imgs-' + winId + '">' + imgHtml + '</div>' +
+        '<table class="dish-table"><thead><tr><th>菜品</th><th>价格</th><th>操作与评价</th></tr></thead><tbody>' + dishRows + '</tbody></table>' +
+        (windowReviewsHtml ? '<div class="window-reviews"><div class="window-reviews-title">窗口评价</div>' + windowReviewsHtml + '</div>' : '') +
+        '</div>';
+      document.getElementById('content-area').innerHTML = html;
+      document.getElementById('tip-select-window') && document.getElementById('tip-select-window').remove();
+
+      document.querySelector('.add-img[data-wid="' + winId + '"]').onclick = function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = function() {
+          const file = this.files && this.files[0];
+          if (!file) return;
+          const fd = new FormData();
+          fd.append('file', file);
+          fetch(base + '/api/eat/windows/' + winId + '/images', { method: 'POST', body: fd, credentials: 'include' })
+            .then(r => r.json())
+            .then(data => {
+              if (data.code === 0) {
+                const wrap = document.getElementById('win-imgs-' + winId);
+                const add = wrap.querySelector('.add-img');
+                const img = document.createElement('img');
+                img.src = base + data.url;
+                wrap.insertBefore(img, add);
+              } else alert(data.message || '上传失败');
+            })
+            .catch(() => alert('网络异常'));
+        };
+        input.click();
+      };
+
+      document.querySelectorAll('.btn-dish-upload').forEach(btn => {
+        btn.onclick = function() {
+          const dishId = this.dataset.dishId;
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.onchange = function() {
+            const file = this.files && this.files[0];
+            if (!file) return;
+            const fd = new FormData();
+            fd.append('file', file);
+            fd.append('bucket', 'canteen');
+            fetch(base + '/api/upload', { method: 'POST', body: fd, credentials: 'include' })
+              .then(r => r.json())
+              .then(data => {
+                if (data.code === 0 && data.url) {
+                  fetch(base + '/api/eat/review', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dish_id: parseInt(dishId, 10), rating: 5, image_urls: [data.url] }),
+                    credentials: 'include',
+                  }).then(r => r.json()).then(d => {
+                    if (d.code === 0) { alert('上传成功'); refreshWindowDetail(); } else alert(d.message || '失败');
+                  }).catch(() => alert('网络异常'));
+                } else alert(data.message || '上传失败');
+              })
+              .catch(() => alert('网络异常'));
+          };
+          input.click();
+        };
+      });
+
+      document.querySelectorAll('.btn-dish-review').forEach(btn => {
+        btn.onclick = function() {
+          dishReviewDishId = this.dataset.dishId;
+          document.getElementById('dish-review-title').textContent = '评价：' + this.dataset.name;
+          document.getElementById('dish-review-content').value = '';
+          document.getElementById('dish-review-imgs').innerHTML = '';
+          dishReviewImgUrls = [];
+          dishReviewRating = 0;
+          const starsEl = document.getElementById('dish-review-stars');
+          starsEl.innerHTML = [1,2,3,4,5].map(i => '<span>☆</span>').join('');
+          starsEl.querySelectorAll('span').forEach((sp, i) => {
+            sp.onclick = () => {
+              dishReviewRating = i + 1;
+              starsEl.innerHTML = [1,2,3,4,5].map(j => '<span>' + (j <= dishReviewRating ? '★' : '☆') + '</span>').join('');
+              starsEl.querySelectorAll('span').forEach((s, j) => { s.onclick = () => { dishReviewRating = j + 1; starsEl.innerHTML = [1,2,3,4,5].map(k => '<span>' + (k <= dishReviewRating ? '★' : '☆') + '</span>').join(''); }; });
+            };
+          });
+          document.getElementById('dish-review-modal').classList.add('show');
+        };
+      });
+    }
+
+    function refreshWindowDetail() {
+      if (!currentCanteenId || currentFloor === null || !currentWindow) return;
+      fetch(base + '/api/eat/canteens/' + currentCanteenId).then(r => r.json()).then(data => {
+        if (data.code !== 0 || !data.floors[currentFloor]) return;
+        const arr = data.floors[currentFloor];
+        const item = arr.find(x => x.window && x.window.id === currentWindow.window.id);
+        if (item) {
+          currentWindow = item;
+          selectWindow(item);
+        }
+      });
+    }
+
+    document.getElementById('dish-review-add-img').onclick = function() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = function() {
+        const file = this.files && this.files[0];
+        if (!file) return;
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('bucket', 'canteen');
+        fetch(base + '/api/upload', { method: 'POST', body: fd, credentials: 'include' })
+          .then(r => r.json())
+          .then(data => {
+            if (data.code === 0 && data.url) {
+              dishReviewImgUrls.push(data.url);
+              const wrap = document.getElementById('dish-review-imgs');
+              const img = document.createElement('img');
+              img.src = base + data.url;
+              img.style.width = '48px'; img.style.height = '48px'; img.style.objectFit = 'cover'; img.style.borderRadius = '6px';
+              wrap.appendChild(img);
+            }
+          });
+      };
+      input.click();
+    };
+
+    document.getElementById('dish-review-cancel').onclick = () => document.getElementById('dish-review-modal').classList.remove('show');
+    document.getElementById('dish-review-submit').onclick = function() {
+      if (!dishReviewDishId) return;
+      const rating = dishReviewRating || 5;
+      const content = document.getElementById('dish-review-content').value.trim();
+      fetch(base + '/api/eat/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dish_id: parseInt(dishReviewDishId, 10), rating, content, image_urls: dishReviewImgUrls.length ? dishReviewImgUrls : undefined }),
+        credentials: 'include',
+      }).then(r => r.json()).then(data => {
+        if (data.code === 0) { document.getElementById('dish-review-modal').classList.remove('show'); refreshWindowDetail(); alert('评价成功'); }
+        else alert(data.message || '提交失败');
+      }).catch(() => alert('网络异常'));
+    };
+
+    document.getElementById('dish-review-stars').innerHTML = [1,2,3,4,5].map(i => '<span>☆</span>').join('');
+    document.getElementById('dish-review-stars').querySelectorAll('span').forEach((sp, i) => {
+      sp.onclick = () => {
+        dishReviewRating = i + 1;
+        document.getElementById('dish-review-stars').innerHTML = [1,2,3,4,5].map(j => '<span>' + (j <= dishReviewRating ? '★' : '☆') + '</span>').join('');
+        document.getElementById('dish-review-stars').querySelectorAll('span').forEach((s, j) => s.onclick = () => { dishReviewRating = j + 1; document.getElementById('dish-review-stars').innerHTML = [1,2,3,4,5].map(k => '<span>' + (k <= dishReviewRating ? '★' : '☆') + '</span>').join(''); });
+      };
+    });
+
+    loadCanteens();
+
+    // ----- 提交食堂信息弹窗（保留原逻辑，简化引用） -----
+    function fillSubmitCanteenSelect() {
+      const sel = document.getElementById('sub-canteen-select');
+      sel.innerHTML = '<option value="">-- 请选择或新建 --</option>';
+      allCanteens.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.textContent = c.name + '（' + (c.floors_count || 0) + ' 层）';
+        sel.appendChild(opt);
+      });
+    }
+    function loadCanteenDetailForSubmit(canteenId, then) {
+      fetch(base + '/api/eat/canteens/' + canteenId).then(r => r.json()).then(data => {
+        canteenDetail = data.code === 0 ? data : null;
+        if (then) then();
+      }).catch(() => { canteenDetail = null; if (then) then(); });
+    }
+    function fillFloorSelect() {
+      const sel = document.getElementById('sub-floor');
+      const cId = document.getElementById('sub-canteen-select').value;
+      const c = allCanteens.find(x => String(x.id) === String(cId));
+      const maxF = (c && c.floors_count) ? c.floors_count : 3;
+      sel.innerHTML = '';
+      for (let f = 1; f <= maxF; f++) sel.appendChild(new Option(f + ' 层', f));
+      sel.appendChild(new Option('负一层', -1));
+      fillWindowSelect();
+    }
+    function fillWindowSelect() {
+      const sel = document.getElementById('sub-window-select');
+      const floor = parseInt(document.getElementById('sub-floor').value, 10);
+      sel.innerHTML = '<option value="">-- 请选择或新建 --</option>';
+      if (!canteenDetail || !canteenDetail.floors) return;
+      (canteenDetail.floors[floor] || []).forEach(item => {
+        const w = item.window;
+        if (w) sel.appendChild(new Option(w.name, w.id));
+      });
+      fillDishPick();
+    }
+    function fillDishPick() {
+      const sel = document.getElementById('sub-dish-pick');
+      sel.innerHTML = '<option value="">-- 选择已有菜品 --</option>';
+      const floor = parseInt(document.getElementById('sub-floor').value, 10);
+      const winId = document.getElementById('sub-window-select').value;
+      if (!canteenDetail || !winId) return;
+      const wins = canteenDetail.floors[floor] || [];
+      for (let i = 0; i < wins.length; i++) {
+        if (String(wins[i].window.id) !== String(winId)) continue;
+        (wins[i].dishes || []).forEach(d => {
+          const opt = new Option(d.name + (d.price != null ? ' ¥' + d.price : ''), d.id);
+          opt.dataset.name = d.name;
+          opt.dataset.price = (d.price != null ? d.price : d.price_min) ?? '';
+          sel.appendChild(opt);
+        });
+        break;
+      }
+    }
+    function addDishRow(dishId, name, price) {
+      const list = document.getElementById('sub-dishes-list');
+      const row = document.createElement('div');
+      row.className = 'dish-row';
+      row.innerHTML = '<input type="text" class="dish-name" placeholder="菜品名" value="' + esc(name || '') + '"><input type="number" class="dish-price" placeholder="价格" step="0.01" value="' + (price !== undefined && price !== '' ? price : '') + '"><span class="remove-dish">✕</span>';
+      if (dishId) row.dataset.dishId = dishId;
+      row.querySelector('.remove-dish').onclick = () => row.remove();
+      list.appendChild(row);
+    }
+    document.getElementById('btn-submit').onclick = function() {
+      fetch(base + '/api/eat/canteens').then(r => r.json()).then(data => {
+        allCanteens = data.canteens || [];
+        fillSubmitCanteenSelect();
+      });
+      document.getElementById('sub-canteen-is-new').checked = false;
+      document.getElementById('sub-window-is-new').checked = false;
+      document.getElementById('sub-canteen-new').style.display = 'none';
+      document.getElementById('sub-canteen-select').style.display = '';
+      document.getElementById('sub-window-new').style.display = 'none';
+      document.getElementById('sub-window-select').style.display = '';
+      document.getElementById('sub-dishes-list').innerHTML = '';
+      document.getElementById('submit-modal').classList.add('show');
+    };
+    document.getElementById('sub-canteen-select').onchange = function() {
+      const cId = this.value;
+      document.getElementById('sub-window-select').innerHTML = '<option value="">-- 请先选餐厅与楼层 --</option>';
+      if (!cId) return;
+      loadCanteenDetailForSubmit(cId, fillFloorSelect);
+    };
+    document.getElementById('sub-floor').onchange = fillWindowSelect;
+    document.getElementById('sub-window-is-new').onchange = function() {
+      document.getElementById('sub-window-select').style.display = this.checked ? 'none' : '';
+      document.getElementById('sub-window-new').style.display = this.checked ? '' : 'none';
+    };
+    document.getElementById('sub-window-select').onchange = function() { if (!document.getElementById('sub-window-is-new').checked) fillDishPick(); };
+    document.getElementById('sub-dish-pick').onchange = function() {
+      const opt = this.options[this.selectedIndex];
+      if (opt && opt.value) { addDishRow(opt.value, opt.dataset.name, opt.dataset.price); this.selectedIndex = 0; }
+    };
+    document.getElementById('sub-dish-add-row').onclick = () => addDishRow(null, '', '');
+    document.getElementById('btn-cancel').onclick = () => document.getElementById('submit-modal').classList.remove('show');
+    document.getElementById('btn-ok').onclick = function() {
+      const isNewCanteen = document.getElementById('sub-canteen-is-new').checked;
+      const isNewWindow = document.getElementById('sub-window-is-new').checked;
+      const canteenId = document.getElementById('sub-canteen-select').value;
+      const canteenName = document.getElementById('sub-canteen-new').value.trim();
+      const windowId = document.getElementById('sub-window-select').value;
+      const windowName = document.getElementById('sub-window-new').value.trim();
+      const floor = parseInt(document.getElementById('sub-floor').value, 10);
+      if (!isNewCanteen && !canteenId) { alert('请选择餐厅'); return; }
+      if (isNewCanteen && !canteenName) { alert('请填写新餐厅名'); return; }
+      if (!isNewWindow && !windowId) { alert('请选择窗口'); return; }
+      if (isNewWindow && !windowName) { alert('请填写新窗口名'); return; }
+      const rows = document.querySelectorAll('#sub-dishes-list .dish-row');
+      const dishes = [];
+      rows.forEach(row => {
+        const dishId = row.dataset.dishId;
+        const name = (row.querySelector('.dish-name').value || '').trim();
+        const priceEl = row.querySelector('.dish-price');
+        const price = priceEl.value === '' ? null : parseFloat(priceEl.value);
+        if (dishId) dishes.push({ dish_id: parseInt(dishId, 10) });
+        else if (name) dishes.push({ name, price });
+      });
+      fetch(base + '/api/eat/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          floor, canteen_id: isNewCanteen ? null : (canteenId ? parseInt(canteenId, 10) : null),
+          canteen_name: isNewCanteen ? canteenName : null,
+          window_id: isNewWindow ? null : (windowId ? parseInt(windowId, 10) : null),
+          window_name: isNewWindow ? windowName : null,
+          dishes,
+        }),
+        credentials: 'include',
+      }).then(r => r.json()).then(data => {
+        if (data.code === 0) { alert(data.message || '提交成功'); document.getElementById('submit-modal').classList.remove('show'); }
+        else alert(data.message || '提交失败');
+      }).catch(() => alert('网络异常'));
+    };
+  </script>
+</body>
+</html>
