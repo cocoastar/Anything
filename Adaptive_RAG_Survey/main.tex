@@ -1,0 +1,47 @@
+\documentclass[11pt,a4paper]{ctexart}
+\usepackage[margin=2.45cm,headheight=14pt]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue!45!black,citecolor=blue!45!black,urlcolor=blue!45!black]{hyperref}
+\usepackage{url}
+
+\linespread{1.22}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.25em}
+\setlist{nosep,leftmargin=2em}
+\renewcommand{\arraystretch}{1.22}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small 自适应检索增强生成技术综述}
+\fancyhead[R]{\small 课程综述}
+\fancyfoot[C]{\thepage}
+\newcommand{\method}[1]{\textbf{#1}}
+
+\title{\bfseries 从静态检索到自适应闭环：\\检索增强生成的检索决策、证据纠错与迭代推理}
+\author{姓名：待填写 \qquad 学号：待填写\\[0.3em] \small 课程名称：待填写}
+\date{\today}
+
+\begin{document}
+\maketitle
+\thispagestyle{empty}
+\input{sec/0_abstract}
+\input{sec/1_introduction}
+\input{sec/2_foundations}
+\input{sec/3_adaptive_methods}
+\input{sec/4_iterative_reasoning}
+\input{sec/5_evaluation}
+\input{sec/6_discussion}
+\input{sec/7_conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{reference}
+
+\end{document}
