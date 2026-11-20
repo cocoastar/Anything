@@ -1,0 +1,29 @@
+\section{技术基础与统一分析框架}
+\label{sec:foundations}
+
+\subsection{从参数生成到检索条件生成}
+
+设用户输入为 $x$，外部知识库为 $\mathcal D$。检索器根据查询与文档的相关性选出 $k$ 个候选文档：
+\begin{equation}
+ E=\operatorname{TopK}_{d\in\mathcal D}\,s_{\phi}(x,d),
+ \label{eq:retrieval}
+\end{equation}
+其中 $s_{\phi}$ 为相关性函数，$E$ 为证据集合。基本生成过程可写为 $y\sim p_{\theta}(y\mid x,E)$；原始 RAG 也可对多个文档上的预测进行边缘化~\citep{lewis2020rag}。参数 $\theta$ 提供训练中习得的知识，$E$ 在推理时补充可读取的信息。
+
+任一环节都可能损失信息：用户表达未必适合检索，相关文档可能只覆盖问题的一部分，生成器可能忽略关键条件或加入无依据细节。后文方法分别在需求识别、查询、证据和生成阶段引入反馈。
+
+\subsection{自适应闭环：状态、行动与反馈}
+
+本文把第 $t$ 轮的系统状态写为
+\begin{equation}
+ s_t=(x,G_t,E_t,b_t),
+ \label{eq:state}
+\end{equation}
+其中 $G_t$ 是生成内容或中间推理，$E_t$ 是当前证据，$b_t$ 是剩余检索、词元或时间预算。系统据此选择直接回答、改写查询、检索、过滤文档或停止等行动。FLARE 关注生成历史中的置信度，IRCoT 利用中间推理形成查询，CRAG 根据证据评价改变行动，它们可放在同一个状态转移过程中理解。相应控制问题包括检索触发、查询构建、证据评价和停止决策。
+
+检索和生成都会消耗资源，自适应策略可用下式概括其目标：
+\begin{equation}
+ \max_{\pi}\; \mathbb E_{\pi}\left[Q(y,E)-\lambda_r C_r-\lambda_l C_l-\lambda_u C_u\right],
+ \label{eq:objective}
+\end{equation}
+其中 $\pi$ 是行动策略，$Q$ 衡量答案质量及证据支持，$C_r$、$C_l$ 分别表示检索与生成开销，$C_u$ 表示错误或无依据回答的风险。权重反映应用需求。请求类型稳定时，轻量路由可能已经足够；信息需求随推理暴露时，过程反馈更有价值；$Q$ 若只表示最终正确率，中间行动的差异还容易被掩盖，过程监督与逐轮答案评价由此具有重要意义~\citep{xiong2026process,tian2026partial}。
